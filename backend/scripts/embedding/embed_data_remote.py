@@ -36,14 +36,16 @@ DATA_DIR = PROJECT_ROOT / "backend" / "data"
 class EmbeddingPipeline:
     """임베딩 파이프라인 (개선됨 - 텍스트 전처리 추가)"""
     
-    def __init__(self, db_config: Dict[str, str], embed_api_url: str):
+    def __init__(self, db_config: Dict[str, str], embed_api_url: str, load_only: bool = False):
         """
         Args:
             db_config: PostgreSQL 연결 정보
             embed_api_url: 원격 임베딩 API URL
+            load_only: True이면 데이터만 로드하고 임베딩은 생성하지 않음
         """
         self.db_config = db_config
         self.embed_api_url = embed_api_url
+        self.load_only = load_only
         self.conn = None
         self.batch_size = 32  # 임베딩 배치 크기
         
@@ -61,10 +63,10 @@ class EmbeddingPipeline:
             'errors': []
         }
         
-        # API 연결 테스트
-        self._test_api_connection()
+        # API 연결 테스트 (load_only 모드에서는 실패해도 계속 진행)
+        self.api_available = self._test_api_connection(skip_if_failed=load_only)
     
-    def _test_api_connection(self):
+    def _test_api_connection(self, skip_if_failed=False):
         """임베딩 API 연결 테스트"""
         print(f"\n🔌 임베딩 API 연결 테스트: {self.embed_api_url}")
         try:
@@ -72,7 +74,12 @@ class EmbeddingPipeline:
             response = requests.get(base_url, timeout=10)
             response.raise_for_status()
             print(f"✅ API 연결 성공: {response.json()}")
+            return True
         except requests.exceptions.RequestException as e:
+            if skip_if_failed:
+                print(f"⚠️  API 연결 실패 (데이터만 로드 모드): {e}")
+                print("   데이터만 로드하고 임베딩은 나중에 생성하세요.")
+                return False
             print(f"❌ API 연결 실패: {e}")
             print("\n다음을 확인하세요:")
             print("1. SSH 터널: ssh -L 8001:localhost:8000 [user]@[host] -p [port]")
@@ -501,8 +508,17 @@ class EmbeddingPipeline:
             print(f"⚠️  빈 content 청크: {self.stats['chunks_empty']}개")
         
         # 임베딩 생성
-        if all_chunks_to_embed:
-            self.embed_chunks(all_chunks_to_embed)
+        if self.load_only:
+            print(f"📝 데이터만 로드 모드: {len(all_chunks_to_embed):,}개 청크가 임베딩 대기 중입니다.")
+            print("   나중에 다음 명령어로 임베딩을 생성하세요:")
+            print("   conda run -n dsr python backend/scripts/embedding/embedding_tool.py --generate-local")
+        elif all_chunks_to_embed:
+            if not self.api_available:
+                print("⚠️  API가 사용 불가능합니다. 데이터만 로드되었습니다.")
+                print("   나중에 다음 명령어로 임베딩을 생성하세요:")
+                print("   conda run -n dsr python backend/scripts/embedding/embedding_tool.py --generate-local")
+            else:
+                self.embed_chunks(all_chunks_to_embed)
         else:
             print("⚠️  임베딩할 청크가 없습니다.")
     
@@ -704,6 +720,13 @@ class EmbeddingPipeline:
 
 def main():
     """메인 함수"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='데이터 임베딩 파이프라인')
+    parser.add_argument('--load-only', action='store_true', 
+                       help='데이터만 로드하고 임베딩은 생성하지 않음')
+    args = parser.parse_args()
+    
     # 환경 변수에서 설정 로드
     db_config = {
         'host': os.getenv('DB_HOST', 'localhost'),
@@ -716,14 +739,17 @@ def main():
     embed_api_url = os.getenv('EMBED_API_URL', 'http://localhost:8001/embed')
     
     print("=" * 80)
-    print("🚀 임베딩 파이프라인 시작")
+    if args.load_only:
+        print("📥 데이터 로드만 수행 (임베딩 제외)")
+    else:
+        print("🚀 임베딩 파이프라인 시작")
     print("=" * 80)
     print(f"데이터베이스: {db_config['host']}:{db_config['port']}/{db_config['database']}")
     print(f"임베딩 API: {embed_api_url}")
     
     # 파이프라인 실행
     try:
-        pipeline = EmbeddingPipeline(db_config, embed_api_url)
+        pipeline = EmbeddingPipeline(db_config, embed_api_url, load_only=args.load_only)
         pipeline.process_all_files()
         
         # 검증
