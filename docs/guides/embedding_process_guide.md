@@ -344,8 +344,14 @@ conda env list
 
 ### 4.2 임베딩 스크립트 실행
 
+**⚠️ 중요**: 
+- `embedding_tool.py --generate-local`은 **이미 데이터베이스에 로드된 청크**에만 임베딩을 생성합니다.
+- 데이터베이스가 비어있으면 먼저 데이터를 로드해야 합니다.
+- 데이터 로드와 임베딩 생성을 분리하여 실행할 수 있습니다.
+
 #### 방법 1: 원격 임베딩 API 사용 (권장 - GPU 활용)
 
+**데이터 로드 + 임베딩 생성 (한 번에)**:
 ```bash
 # ⚠️ 중요: 프로젝트 루트 디렉토리에서 실행
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -353,48 +359,94 @@ cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 # SSH 터널 설정 (RunPod 등 원격 GPU 사용 시)
 # ssh -L 8001:localhost:8000 user@remote-host
 
-# 임베딩 스크립트 실행
+# 임베딩 스크립트 실행 (데이터 로드 + 임베딩 생성)
 conda run -n dsr python backend/scripts/embedding/embed_data_remote.py
 ```
 
-#### 방법 2: 로컬 임베딩 모델 사용
-
+**데이터만 로드 (임베딩은 나중에)**:
 ```bash
 # ⚠️ 중요: 프로젝트 루트 디렉토리에서 실행
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
-# 방법 2-A: embedding_tool.py 사용 (통합 도구)
-conda run -n dsr python backend/scripts/embedding/embedding_tool.py --generate-local
+# 데이터만 로드 (API 연결 없이)
+conda run -n dsr python backend/scripts/embedding/embed_data_remote.py --load-only
 
-# 방법 2-B: embed_data_remote.py를 로컬 모드로 사용
-# (EMBED_API_URL을 설정하지 않으면 로컬 모델 사용)
+# 이후 임베딩 생성
+conda run -n dsr python backend/scripts/embedding/embedding_tool.py --generate-local
+```
+
+#### 방법 2: 로컬 임베딩 모델 사용
+
+**2단계 프로세스 (권장)**:
+```bash
+# ⚠️ 중요: 프로젝트 루트 디렉토리에서 실행
+cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+# 1단계: 데이터만 로드
+conda run -n dsr python backend/scripts/embedding/embed_data_remote.py --load-only
+
+# 2단계: 로컬 모델로 임베딩 생성
+# ⚠️ 주의: 모델 로드에 시간이 걸릴 수 있습니다 (처음 실행 시 몇 분 소요)
+conda run -n dsr python backend/scripts/embedding/embedding_tool.py --generate-local
+```
+
+**왜 두 단계가 필요한가요?**
+- `embed_data_remote.py`: JSONL 파일에서 데이터를 읽어 데이터베이스에 로드합니다 (임베딩 없이)
+- `embedding_tool.py`: 이미 데이터베이스에 있는 청크에 임베딩을 생성합니다
+- 두 단계를 분리하면:
+  - API 연결 없이 데이터만 먼저 로드 가능
+  - 임베딩 생성은 나중에 로컬 또는 원격으로 선택 가능
+  - 중단 시 데이터는 유지되고 임베딩만 다시 생성 가능
+
+**⚠️ 주의사항**:
+- `embedding_tool.py --generate-local` 실행 시:
+  - 처음 실행 시 모델 다운로드 및 로드에 시간이 걸립니다 (1-3분)
+  - 모델 로드 중에는 출력이 없을 수 있습니다 (정상입니다)
+  - 모델 로드 완료 후 임베딩 생성이 시작됩니다
+  - 대량의 청크(수만 개)는 시간이 오래 걸릴 수 있습니다
+
+**한 번에 실행 (원격 API 필요)**:
+```bash
+# ⚠️ 중요: 프로젝트 루트 디렉토리에서 실행
+cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+# 원격 API를 사용하여 데이터 로드 + 임베딩 생성
+# (EMBED_API_URL이 설정되어 있어야 함)
 conda run -n dsr python backend/scripts/embedding/embed_data_remote.py
 ```
 
+**왜 두 단계를 분리하나요?**
+1. **유연성**: API 연결 없이 데이터만 먼저 로드 가능
+2. **효율성**: 데이터 로드와 임베딩 생성을 독립적으로 실행 가능
+3. **재시도 용이**: 임베딩 생성 실패 시 데이터는 유지되고 임베딩만 다시 생성 가능
+4. **리소스 관리**: 데이터 로드는 빠르고, 임베딩 생성은 시간이 오래 걸리므로 분리 관리
+
+**⚠️ embedding_tool.py 실행 시 주의사항**:
+- **모델 로드에 시간이 걸립니다**: 처음 실행 시 Hugging Face에서 모델을 다운로드합니다 (1-3분)
+- **출력이 없을 수 있습니다**: 모델 로드 중에는 "모델 로드 중..." 메시지 후 잠시 출력이 없을 수 있습니다 (정상입니다)
+- **대량의 청크는 시간이 오래 걸립니다**: 수만 개의 청크는 임베딩 생성에 시간이 오래 걸릴 수 있습니다
+
 **참고**: 
 - `embed_data.py` 파일은 존재하지 않습니다. 대신 다음 스크립트를 사용하세요:
-  - `embed_data_remote.py`: 원격 임베딩 API 또는 로컬 모델 모두 지원
-  - `embedding_tool.py`: 통합 임베딩 도구 (로컬/원격 선택 가능)
+  - `embed_data_remote.py`: 데이터 로드 + 원격 임베딩 API 사용
+    - `--load-only`: 데이터만 로드하고 임베딩은 생성하지 않음
+  - `embedding_tool.py`: 통합 임베딩 도구 (이미 로드된 데이터에 임베딩 생성)
+    - `--check`: 임베딩 상태 확인
+    - `--generate-local`: 로컬 모델로 임베딩 생성
+    - `--generate-remote`: 원격 API로 임베딩 생성
 - 모든 스크립트는 프로젝트 루트 디렉토리에서 실행해야 합니다.
-- `embedding_tool.py` 사용법:
-  ```bash
-  # 임베딩 상태 확인
-  conda run -n dsr python backend/scripts/embedding/embedding_tool.py --check
-  
-  # 로컬 모델로 임베딩 생성
-  conda run -n dsr python backend/scripts/embedding/embedding_tool.py --generate-local
-  
-  # 원격 API로 임베딩 생성
-  conda run -n dsr python backend/scripts/embedding/embedding_tool.py --generate-remote
-  ```
+- **데이터베이스가 비어있으면** `embedding_tool.py --generate-local`은 작동하지 않습니다. 먼저 `embed_data_remote.py --load-only`로 데이터를 로드하세요.
 
 ### 4.3 임베딩 프로세스 상세
 
-스크립트는 다음 작업을 수행합니다:
+#### embed_data_remote.py 프로세스
+
+`embed_data_remote.py`는 다음 작업을 수행합니다:
 
 1. **데이터베이스 연결**
    - PostgreSQL 연결 확인
    - pgvector 확장 확인
+   - API 연결 테스트 (`--load-only` 옵션 없을 때만)
 
 2. **데이터 로드**
    - `backend/data/` 디렉토리의 모든 `.jsonl` 파일 읽기
@@ -404,18 +456,55 @@ conda run -n dsr python backend/scripts/embedding/embed_data_remote.py
    - `documents` 테이블에 문서 메타데이터 삽입
    - 중복 체크 (이미 존재하는 경우 스킵)
 
-4. **Chunks 임베딩 및 삽입**
+4. **Chunks 삽입**
    - 각 청크의 `content` 필드 추출
    - 텍스트 전처리 (공백 정리, 특수문자 정규화)
+   - `chunks` 테이블에 삽입 (임베딩 없이)
+
+5. **임베딩 생성** (`--load-only` 옵션 없을 때만)
    - KURE-v1 모델로 임베딩 생성 (1024차원)
    - 배치 처리 (기본 32개 청크 단위)
-   - `chunks` 테이블에 삽입
+   - `chunks` 테이블의 `embedding` 컬럼 업데이트
 
-5. **통계 출력**
+6. **통계 출력**
    - 삽입된 문서 수
    - 삽입된 청크 수
-   - 임베딩 완료율
-   - 평균 청크 길이
+   - 임베딩 완료율 (임베딩 생성 시)
+
+#### embedding_tool.py 프로세스
+
+`embedding_tool.py --generate-local`은 다음 작업을 수행합니다:
+
+1. **데이터베이스 연결**
+   - PostgreSQL 연결 확인
+   - pgvector 확장 확인
+
+2. **임베딩 필요한 청크 조회**
+   - `chunks` 테이블에서 `embedding IS NULL`인 청크 찾기
+   - `drop = FALSE`이고 `content`가 있는 청크만 선택
+   - 조회 결과 출력: "✅ X개 청크 발견"
+
+3. **로컬 모델 로드** ⚠️ 시간 소요
+   - KURE-v1 모델 및 토크나이저 다운로드 (처음 실행 시)
+   - 모델 로드 (1-3분 소요, 출력이 없을 수 있음)
+   - GPU 사용 가능 시 자동 감지
+   - 디바이스 정보 출력: "디바이스: cuda/cpu"
+
+4. **임베딩 생성**
+   - 배치 처리 (기본 8개 청크 단위)
+   - 진행 상황 표시 (tqdm 진행 바)
+   - `chunks` 테이블의 `embedding` 컬럼 업데이트
+
+5. **통계 출력**
+   - 처리된 청크 수
+   - 소요 시간
+   - 평균 속도
+
+**⚠️ 모델 로드 중 출력이 없을 수 있습니다**:
+- 처음 실행 시 Hugging Face에서 모델을 다운로드합니다
+- 모델 파일 크기가 크므로(수백 MB) 다운로드에 시간이 걸립니다
+- 모델 로드 중에는 "모델 로드 중..." 메시지 후 잠시 출력이 없을 수 있습니다
+- 이는 정상이며, 모델 로드가 완료되면 임베딩 생성이 시작됩니다
 
 ### 4.4 실행 예시 출력
 
@@ -567,18 +656,30 @@ docker exec ddoksori_db psql -U postgres -d ddoksori -c "SELECT * FROM pg_extens
 **증상**: `❌ API 연결 실패: Connection refused`
 
 **해결**:
-1. SSH 터널 확인 (원격 GPU 사용 시)
+1. **데이터만 먼저 로드** (권장)
    ```bash
-   ssh -L 8001:localhost:8000 user@remote-host
+   # 프로젝트 루트에서 실행
+   cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+   
+   # 데이터만 로드 (API 연결 없이)
+   conda run -n dsr python backend/scripts/embedding/embed_data_remote.py --load-only
+   
+   # 이후 로컬 모델로 임베딩 생성
+   conda run -n dsr python backend/scripts/embedding/embedding_tool.py --generate-local
    ```
 
-2. 임베딩 서버 실행 확인
-   ```bash
-   # RunPod 등에서
-   uvicorn runpod_embed_server:app --host 0.0.0.0 --port 8000
-   ```
+2. **원격 API 사용 시**:
+   - SSH 터널 확인
+     ```bash
+     ssh -L 8001:localhost:8000 user@remote-host
+     ```
+   - 임베딩 서버 실행 확인
+     ```bash
+     # RunPod 등에서
+     uvicorn runpod_embed_server:app --host 0.0.0.0 --port 8000
+     ```
 
-3. 로컬 모델 사용으로 전환
+3. **로컬 모델 사용** (데이터가 이미 로드된 경우)
    ```bash
    # 프로젝트 루트에서 실행
    cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -686,10 +787,15 @@ WHERE ctid NOT IN (
 - [ ] 스키마 생성 완료 (documents, chunks 테이블 존재)
 - [ ] pgvector 확장 활성화 확인
 - [ ] 데이터 파일 준비 완료
-- [ ] 임베딩 스크립트 실행 완료
+- [ ] 데이터 로드 완료 (`embed_data_remote.py --load-only` 또는 `embed_data_remote.py`)
+- [ ] 임베딩 생성 완료 (`embedding_tool.py --generate-local` 또는 `embed_data_remote.py`)
 - [ ] 임베딩 완료율 100% 확인
 - [ ] 벡터 검색 테스트 성공
 - [ ] 통계 확인 및 검증 완료
+
+**참고**: 데이터 로드와 임베딩 생성을 분리하여 실행할 수 있습니다:
+1. 데이터 로드: `embed_data_remote.py --load-only`
+2. 임베딩 생성: `embedding_tool.py --generate-local`
 
 ---
 

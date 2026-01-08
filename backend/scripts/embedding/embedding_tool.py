@@ -139,10 +139,13 @@ class EmbeddingTool:
             FROM chunks
         """)
         row = cur.fetchone()
-        print(f"최소 길이: {row[0]:,}자")
-        print(f"평균 길이: {row[1]:.0f}자")
-        print(f"중앙값: {row[2]:.0f}자")
-        print(f"최대 길이: {row[3]:,}자")
+        if row and row[0] is not None:
+            print(f"최소 길이: {row[0]:,}자")
+            print(f"평균 길이: {row[1]:.0f}자")
+            print(f"중앙값: {row[2]:.0f}자")
+            print(f"최대 길이: {row[3]:,}자")
+        else:
+            print("데이터가 없습니다.")
         
         # 5. 출처별 통계
         print("\n🏢 출처별 통계")
