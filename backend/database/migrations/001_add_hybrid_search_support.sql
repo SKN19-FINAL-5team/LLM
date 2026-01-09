@@ -1,53 +1,53 @@
 -- Migration: Add Hybrid Search Support
--- 작성일: 2026-01-07
--- 목적: 하이브리드 검색을 위한 메타데이터 및 Full-Text Search 지원 추가
+-- : 2026-01-07
+-- :      Full-Text Search  
 
 -- ============================================
--- 1. documents 테이블 확장
+-- 1. documents  
 -- ============================================
 
--- keywords 컬럼 추가 (추출된 키워드 배열)
+-- keywords   (  )
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS 
     keywords TEXT[];
 
--- search_vector 컬럼 추가 (PostgreSQL Full-Text Search)
+-- search_vector   (PostgreSQL Full-Text Search)
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS
     search_vector tsvector;
 
--- 인덱스 생성
+--  
 CREATE INDEX IF NOT EXISTS idx_documents_keywords 
     ON documents USING GIN(keywords);
 
 CREATE INDEX IF NOT EXISTS idx_documents_search_vector 
     ON documents USING GIN(search_vector);
 
--- 코멘트 추가
-COMMENT ON COLUMN documents.keywords IS '문서에서 추출된 핵심 키워드 배열 (검색 최적화용)';
-COMMENT ON COLUMN documents.search_vector IS 'PostgreSQL Full-Text Search를 위한 tsvector (한국어 지원)';
+--  
+COMMENT ON COLUMN documents.keywords IS '     ( )';
+COMMENT ON COLUMN documents.search_vector IS 'PostgreSQL Full-Text Search  tsvector ( )';
 
 -- ============================================
--- 2. chunks 테이블 확장
+-- 2. chunks  
 -- ============================================
 
--- importance_score 컬럼 추가 (청크 중요도 점수)
+-- importance_score   (  )
 ALTER TABLE chunks ADD COLUMN IF NOT EXISTS
     importance_score FLOAT DEFAULT 1.0;
 
--- importance_score에 대한 인덱스
+-- importance_score  
 CREATE INDEX IF NOT EXISTS idx_chunks_importance 
     ON chunks(importance_score) WHERE drop = FALSE;
 
--- 코멘트 추가
-COMMENT ON COLUMN chunks.importance_score IS '청크 중요도 점수 (1.0 기본값, 재랭킹 시 사용)';
+--  
+COMMENT ON COLUMN chunks.importance_score IS '   (1.0 ,   )';
 
 -- ============================================
--- 3. Materialized View 생성
+-- 3. Materialized View 
 -- ============================================
 
--- 기존 materialized view가 있다면 삭제
+--  materialized view  
 DROP MATERIALIZED VIEW IF EXISTS mv_searchable_chunks CASCADE;
 
--- 검색 최적화를 위한 materialized view 생성
+--    materialized view 
 CREATE MATERIALIZED VIEW mv_searchable_chunks AS
 SELECT 
     c.chunk_id,
@@ -66,7 +66,7 @@ FROM chunks c
 JOIN documents d ON c.doc_id = d.doc_id
 WHERE c.drop = FALSE AND c.embedding IS NOT NULL;
 
--- Materialized View 인덱스
+-- Materialized View 
 CREATE INDEX idx_mv_chunks_content 
     ON mv_searchable_chunks USING GIN(content_vector);
 
@@ -82,13 +82,13 @@ CREATE INDEX idx_mv_chunks_chunk_type
 CREATE INDEX idx_mv_chunks_importance 
     ON mv_searchable_chunks(importance_score);
 
-COMMENT ON MATERIALIZED VIEW mv_searchable_chunks IS '검색 최적화를 위한 청크 통합 뷰 (활성 청크만 포함)';
+COMMENT ON MATERIALIZED VIEW mv_searchable_chunks IS '      (  )';
 
 -- ============================================
--- 4. 하이브리드 검색 함수
+-- 4.   
 -- ============================================
 
--- 키워드 + 벡터 하이브리드 검색 함수
+--  +    
 CREATE OR REPLACE FUNCTION hybrid_search_chunks(
     query_embedding vector(1024),
     query_keywords TEXT[],
@@ -174,13 +174,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION hybrid_search_chunks IS '하이브리드 검색 함수: 벡터 유사도 + 키워드 매칭 조합';
+COMMENT ON FUNCTION hybrid_search_chunks IS '  :   +   ';
 
 -- ============================================
--- 5. 메타데이터 기반 검색 보조 함수
+-- 5.     
 -- ============================================
 
--- 품목명 검색 함수
+--   
 CREATE OR REPLACE FUNCTION search_by_item_name(
     item_names TEXT[],
     top_k INTEGER DEFAULT 10
@@ -215,9 +215,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION search_by_item_name IS '품목명 기반 정확 매칭 검색 (aliases 포함)';
+COMMENT ON FUNCTION search_by_item_name IS '     (aliases )';
 
--- 법령 조문 검색 함수
+--    
 CREATE OR REPLACE FUNCTION search_by_law_article(
     law_name_pattern TEXT,
     article_no TEXT,
@@ -250,10 +250,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION search_by_law_article IS '법령 조문 정확 검색 (법령명 + 조문번호)';
+COMMENT ON FUNCTION search_by_law_article IS '    ( + )';
 
 -- ============================================
--- 6. Materialized View 갱신 함수
+-- 6. Materialized View  
 -- ============================================
 
 CREATE OR REPLACE FUNCTION refresh_searchable_chunks()
@@ -263,25 +263,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION refresh_searchable_chunks IS 'Materialized View 갱신 함수';
+COMMENT ON FUNCTION refresh_searchable_chunks IS 'Materialized View  ';
 
 -- ============================================
--- 완료 메시지
+--  
 -- ============================================
 DO $$
 BEGIN
     RAISE NOTICE '============================================';
-    RAISE NOTICE 'Migration 001: Hybrid Search Support 완료';
+    RAISE NOTICE 'Migration 001: Hybrid Search Support ';
     RAISE NOTICE '============================================';
-    RAISE NOTICE '추가된 컬럼:';
+    RAISE NOTICE ' :';
     RAISE NOTICE '  - documents.keywords (TEXT[])';
     RAISE NOTICE '  - documents.search_vector (tsvector)';
     RAISE NOTICE '  - chunks.importance_score (FLOAT)';
     RAISE NOTICE '';
-    RAISE NOTICE '추가된 Materialized View:';
+    RAISE NOTICE ' Materialized View:';
     RAISE NOTICE '  - mv_searchable_chunks';
     RAISE NOTICE '';
-    RAISE NOTICE '추가된 함수:';
+    RAISE NOTICE ' :';
     RAISE NOTICE '  - hybrid_search_chunks()';
     RAISE NOTICE '  - search_by_item_name()';
     RAISE NOTICE '  - search_by_law_article()';

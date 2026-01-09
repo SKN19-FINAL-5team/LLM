@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-Vector DB 스키마 적합성 테스트
+Vector DB   
 
-목적:
-1. 인덱스 성능 테스트 (IVFFlat)
-2. 메타데이터 필터링 성능 테스트
-3. 청크 관계 조회 성능 테스트
-4. JSONB 메타데이터 쿼리 성능 테스트
-5. 동시성 테스트
+:
+1.    (IVFFlat)
+2.    
+3.     
+4. JSONB    
+5.  
 
-평가 기준:
-- 검색 응답 속도 < 500ms (top_k=10)
-- 필터링 정확도 100%
-- 동시 쿼리 10개 처리 시 성능 저하 < 20%
+ :
+-    < 500ms (top_k=10)
+-   100%
+-   10     < 20%
 """
 
 import psycopg2
@@ -35,7 +35,7 @@ DB_CONFIG = {
 }
 
 class VectorDBSchemaTest:
-    """Vector DB 스키마 테스트 클래스"""
+    """Vector DB   """
     
     def __init__(self, db_config: Dict):
         self.db_config = db_config
@@ -43,17 +43,17 @@ class VectorDBSchemaTest:
         self.test_results = []
         
     def connect(self):
-        """DB 연결"""
+        """DB """
         if self.conn is None or self.conn.closed:
             self.conn = psycopg2.connect(**self.db_config)
     
     def close(self):
-        """DB 연결 종료"""
+        """DB  """
         if self.conn and not self.conn.closed:
             self.conn.close()
     
     def get_random_embedding(self) -> List[float]:
-        """랜덤 임베딩 벡터 가져오기 (테스트용)"""
+        """    ()"""
         self.connect()
         cur = self.conn.cursor()
         cur.execute("""
@@ -69,9 +69,9 @@ class VectorDBSchemaTest:
     
     def test_vector_search_performance(self, top_k: int = 10, iterations: int = 10) -> Dict:
         """
-        테스트 1: 벡터 검색 성능 테스트
+         1:    
         """
-        print("\n=== 테스트 1: 벡터 검색 성능 ===")
+        print("\n===  1:    ===")
         
         embedding = self.get_random_embedding()
         if not embedding:
@@ -103,7 +103,7 @@ class VectorDBSchemaTest:
             query_times.append(elapsed)
             
             if i == 0:
-                print(f"  첫 번째 쿼리 결과: {len(results)}개 청크")
+                print(f"     : {len(results)} ")
         
         cur.close()
         
@@ -112,7 +112,7 @@ class VectorDBSchemaTest:
         min_time = min(query_times)
         max_time = max(query_times)
         
-        passed = avg_time < 500  # 500ms 기준
+        passed = avg_time < 500  # 500ms 
         
         result = {
             "test_name": "Vector Search Performance",
@@ -126,19 +126,19 @@ class VectorDBSchemaTest:
             "top_k": top_k
         }
         
-        print(f"  평균 시간: {avg_time:.2f}ms")
-        print(f"  중앙값: {median_time:.2f}ms")
-        print(f"  최소/최대: {min_time:.2f}ms / {max_time:.2f}ms")
-        print(f"  결과: {'✅ PASSED' if passed else '❌ FAILED'}")
+        print(f"   : {avg_time:.2f}ms")
+        print(f"  : {median_time:.2f}ms")
+        print(f"  /: {min_time:.2f}ms / {max_time:.2f}ms")
+        print(f"  : {' PASSED' if passed else ' FAILED'}")
         
         self.test_results.append(result)
         return result
     
     def test_metadata_filtering(self) -> Dict:
         """
-        테스트 2: 메타데이터 필터링 정확도 및 성능
+         2:     
         """
-        print("\n=== 테스트 2: 메타데이터 필터링 ===")
+        print("\n===  2:   ===")
         
         embedding = self.get_random_embedding()
         if not embedding:
@@ -147,20 +147,20 @@ class VectorDBSchemaTest:
         self.connect()
         cur = self.conn.cursor()
         
-        # 테스트 케이스: doc_type 필터
+        #  : doc_type 
         test_cases = [
             {
-                "name": "doc_type 필터 (law)",
+                "name": "doc_type  (law)",
                 "filter": "d.doc_type = 'law'",
                 "expected_type": "law"
             },
             {
-                "name": "doc_type 필터 (mediation_case)",
+                "name": "doc_type  (mediation_case)",
                 "filter": "d.doc_type = 'mediation_case'",
                 "expected_type": "mediation_case"
             },
             {
-                "name": "source_org 필터 (KCA)",
+                "name": "source_org  (KCA)",
                 "filter": "d.source_org = 'KCA'",
                 "expected_org": "KCA"
             }
@@ -189,7 +189,7 @@ class VectorDBSchemaTest:
             results = cur.fetchall()
             elapsed = (time.time() - start_time) * 1000
             
-            # 정확도 검증
+            #  
             if 'expected_type' in tc:
                 correct = all(row[1] == tc['expected_type'] for row in results)
             elif 'expected_org' in tc:
@@ -204,7 +204,7 @@ class VectorDBSchemaTest:
                 "results_count": len(results)
             })
             
-            print(f"  {tc['name']}: {'✅' if correct else '❌'} ({len(results)}개, {elapsed:.2f}ms)")
+            print(f"  {tc['name']}: {'' if correct else ''} ({len(results)}, {elapsed:.2f}ms)")
         
         cur.close()
         
@@ -219,21 +219,21 @@ class VectorDBSchemaTest:
             "test_cases": filter_results
         }
         
-        print(f"  전체 결과: {'✅ PASSED' if all_passed else '❌ FAILED'}")
+        print(f"   : {' PASSED' if all_passed else ' FAILED'}")
         
         self.test_results.append(result)
         return result
     
     def test_chunk_relations(self) -> Dict:
         """
-        테스트 3: 청크 관계 조회 성능 (컨텍스트 윈도우)
+         3:     ( )
         """
-        print("\n=== 테스트 3: 청크 관계 조회 (컨텍스트 윈도우) ===")
+        print("\n===  3:    ( ) ===")
         
         self.connect()
         cur = self.conn.cursor()
         
-        # 랜덤 청크 선택
+        #   
         cur.execute("""
             SELECT chunk_id, doc_id, chunk_index
             FROM chunks
@@ -248,7 +248,7 @@ class VectorDBSchemaTest:
         
         chunk_id, doc_id, chunk_index = target_chunk
         
-        # get_chunk_with_context 함수 테스트
+        # get_chunk_with_context  
         start_time = time.time()
         
         cur.execute("""
@@ -260,7 +260,7 @@ class VectorDBSchemaTest:
         
         cur.close()
         
-        passed = elapsed < 100  # 100ms 기준
+        passed = elapsed < 100  # 100ms 
         
         result = {
             "test_name": "Chunk Relations (Context Window)",
@@ -271,24 +271,24 @@ class VectorDBSchemaTest:
             "threshold_ms": 100
         }
         
-        print(f"  대상 청크: {chunk_id}")
-        print(f"  컨텍스트 청크: {len(results)}개")
-        print(f"  조회 시간: {elapsed:.2f}ms")
-        print(f"  결과: {'✅ PASSED' if passed else '❌ FAILED'}")
+        print(f"   : {chunk_id}")
+        print(f"   : {len(results)}")
+        print(f"   : {elapsed:.2f}ms")
+        print(f"  : {' PASSED' if passed else ' FAILED'}")
         
         self.test_results.append(result)
         return result
     
     def test_jsonb_query(self) -> Dict:
         """
-        테스트 4: JSONB 메타데이터 쿼리 성능
+         4: JSONB   
         """
-        print("\n=== 테스트 4: JSONB 메타데이터 쿼리 ===")
+        print("\n===  4: JSONB   ===")
         
         self.connect()
         cur = self.conn.cursor()
         
-        # JSONB 필드 쿼리 (decision_date 추출)
+        # JSONB   (decision_date )
         start_time = time.time()
         
         cur.execute("""
@@ -309,7 +309,7 @@ class VectorDBSchemaTest:
         
         cur.close()
         
-        passed = elapsed < 200  # 200ms 기준
+        passed = elapsed < 200  # 200ms 
         
         result = {
             "test_name": "JSONB Metadata Query",
@@ -319,21 +319,21 @@ class VectorDBSchemaTest:
             "threshold_ms": 200
         }
         
-        print(f"  쿼리 결과: {len(results)}개 문서")
-        print(f"  조회 시간: {elapsed:.2f}ms")
-        print(f"  결과: {'✅ PASSED' if passed else '❌ FAILED'}")
+        print(f"   : {len(results)} ")
+        print(f"   : {elapsed:.2f}ms")
+        print(f"  : {' PASSED' if passed else ' FAILED'}")
         
         self.test_results.append(result)
         return result
     
     def test_concurrent_queries(self, num_threads: int = 10) -> Dict:
         """
-        테스트 5: 동시성 테스트 (다중 쿼리 부하)
+         5:   (  )
         """
-        print(f"\n=== 테스트 5: 동시성 테스트 ({num_threads}개 쿼리) ===")
+        print(f"\n===  5:   ({num_threads} ) ===")
         
-        # 먼저 단일 쿼리 벤치마크
-        print("  단일 쿼리 벤치마크...")
+        #    
+        print("    ...")
         single_times = []
         for _ in range(10):
             result = self.test_single_query()
@@ -342,8 +342,8 @@ class VectorDBSchemaTest:
         
         single_avg = statistics.mean(single_times)
         
-        # 동시 쿼리 테스트
-        print(f"  동시 {num_threads}개 쿼리 테스트...")
+        #   
+        print(f"   {num_threads}  ...")
         concurrent_times = []
         
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
@@ -356,9 +356,9 @@ class VectorDBSchemaTest:
         
         concurrent_avg = statistics.mean(concurrent_times)
         
-        # 성능 저하율 계산
+        #   
         degradation = ((concurrent_avg - single_avg) / single_avg) * 100
-        passed = degradation < 20  # 20% 기준
+        passed = degradation < 20  # 20% 
         
         result = {
             "test_name": "Concurrent Queries",
@@ -370,21 +370,21 @@ class VectorDBSchemaTest:
             "num_threads": num_threads
         }
         
-        print(f"  단일 쿼리 평균: {single_avg:.2f}ms")
-        print(f"  동시 쿼리 평균: {concurrent_avg:.2f}ms")
-        print(f"  성능 저하율: {degradation:.2f}%")
-        print(f"  결과: {'✅ PASSED' if passed else '❌ FAILED'}")
+        print(f"    : {single_avg:.2f}ms")
+        print(f"    : {concurrent_avg:.2f}ms")
+        print(f"   : {degradation:.2f}%")
+        print(f"  : {' PASSED' if passed else ' FAILED'}")
         
         self.test_results.append(result)
         return result
     
     def test_single_query(self) -> float:
-        """단일 쿼리 실행 (동시성 테스트용)"""
+        """   ( )"""
         try:
             conn = psycopg2.connect(**self.db_config)
             cur = conn.cursor()
             
-            # 랜덤 임베딩 가져오기
+            #   
             cur.execute("""
                 SELECT embedding 
                 FROM chunks 
@@ -394,7 +394,7 @@ class VectorDBSchemaTest:
             """)
             embedding = cur.fetchone()[0]
             
-            # 벡터 검색 실행
+            #   
             start_time = time.time()
             
             cur.execute("""
@@ -414,19 +414,19 @@ class VectorDBSchemaTest:
             return elapsed
             
         except Exception as e:
-            print(f"  쿼리 실행 오류: {e}")
+            print(f"    : {e}")
             return None
     
     def test_index_statistics(self) -> Dict:
         """
-        추가 테스트: 인덱스 통계 및 크기
+         :    
         """
-        print("\n=== 추가: 인덱스 통계 ===")
+        print("\n=== :   ===")
         
         self.connect()
         cur = self.conn.cursor()
         
-        # 인덱스 크기 조회
+        #   
         cur.execute("""
             SELECT
                 schemaname,
@@ -441,7 +441,7 @@ class VectorDBSchemaTest:
         
         indexes = cur.fetchall()
         
-        # 테이블 크기 조회
+        #   
         cur.execute("""
             SELECT
                 tablename,
@@ -457,13 +457,13 @@ class VectorDBSchemaTest:
         
         cur.close()
         
-        print("  인덱스:")
+        print("  :")
         for idx in indexes:
             print(f"    {idx[2]}: {idx[3]}")
         
-        print("\n  테이블:")
+        print("\n  :")
         for tbl in tables:
-            print(f"    {tbl[0]}: {tbl[1]} (테이블: {tbl[2]})")
+            print(f"    {tbl[0]}: {tbl[1]} (: {tbl[2]})")
         
         result = {
             "test_name": "Index Statistics",
@@ -475,13 +475,13 @@ class VectorDBSchemaTest:
         return result
     
     def run_all_tests(self) -> Dict:
-        """모든 테스트 실행"""
+        """  """
         print("=" * 80)
-        print("Vector DB 스키마 적합성 테스트 시작")
+        print("Vector DB    ")
         print("=" * 80)
         
         try:
-            # 테스트 실행
+            #  
             self.test_vector_search_performance()
             self.test_metadata_filtering()
             self.test_chunk_relations()
@@ -489,7 +489,7 @@ class VectorDBSchemaTest:
             self.test_concurrent_queries()
             self.test_index_statistics()
             
-            # 결과 요약
+            #  
             passed_count = sum(1 for r in self.test_results if r.get('status') == 'passed')
             total_count = sum(1 for r in self.test_results if 'status' in r)
             
@@ -502,17 +502,17 @@ class VectorDBSchemaTest:
             }
             
             print("\n" + "=" * 80)
-            print("테스트 결과 요약")
+            print("  ")
             print("=" * 80)
-            print(f"총 테스트: {total_count}개")
-            print(f"통과: {passed_count}개")
-            print(f"실패: {total_count - passed_count}개")
-            print(f"통과율: {summary['pass_rate']}%")
+            print(f" : {total_count}")
+            print(f": {passed_count}")
+            print(f": {total_count - passed_count}")
+            print(f": {summary['pass_rate']}%")
             
             return summary
             
         except Exception as e:
-            print(f"\n테스트 실행 중 오류: {e}")
+            print(f"\n   : {e}")
             return {"status": "error", "message": str(e)}
         
         finally:
@@ -520,13 +520,13 @@ class VectorDBSchemaTest:
 
 
 if __name__ == "__main__":
-    # 테스트 실행
+    #  
     tester = VectorDBSchemaTest(DB_CONFIG)
     results = tester.run_all_tests()
     
-    # 결과 저장
+    #  
     output_file = "/tmp/vector_db_test_results.json"
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     
-    print(f"\n결과가 {output_file}에 저장되었습니다.")
+    print(f"\n {output_file} .")
