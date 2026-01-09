@@ -7,9 +7,10 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 프로젝트 루트 경로 추가
+# 프로젝트 루트와 backend 디렉토리를 Python 경로에 추가
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / 'backend'))
 
 # 환경 변수 로드
 load_dotenv(project_root / '.env')

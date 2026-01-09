@@ -739,7 +739,7 @@ async def mas_chat(request: ChatRequest):
 ### 11.1 단위 테스트
 
 ```python
-# test/unit/test_mas_agents.py
+# tests/unit/test_mas_agents.py
 
 def test_jurisdiction_agent():
     """Jurisdiction Agent 테스트"""
@@ -759,7 +759,7 @@ def test_jurisdiction_agent():
 ### 11.2 통합 테스트
 
 ```python
-# test/integration/test_mas_workflow.py
+# tests/integration/test_mas_workflow.py
 
 def test_full_workflow():
     """전체 MAS 파이프라인 테스트"""

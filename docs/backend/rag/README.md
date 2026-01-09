@@ -172,7 +172,7 @@ print(f"사용된 청크: {result['chunks_used']}개")
 ```bash
 cd /home/maroco/ddoksori_demo/backend
 conda activate ddoksori
-python test/rag/test_multi_stage_rag.py
+python tests/rag/test_multi_stage_rag.py
 ```
 
 **테스트 항목:**

@@ -508,7 +508,7 @@ retriever.close()
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 # 멀티 스테이지 RAG 테스트 실행
-conda run -n dsr python test/rag/test_multi_stage_rag.py --test-id TC001
+conda run -n dsr python tests/rag/test_multi_stage_rag.py --test-id TC001
 ```
 
 ---

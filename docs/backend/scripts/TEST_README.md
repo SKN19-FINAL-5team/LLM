@@ -38,35 +38,35 @@
 conda activate ddoksori
 
 # 스크립트 실행
-python test/rag/test_multi_stage_rag.py
+python tests/rag/test_multi_stage_rag.py
 ```
 
 #### 2. 특정 테스트 케이스만 실행
 
 ```bash
 # TC001: 전자제품 환불 케이스
-python test/rag/test_multi_stage_rag.py --test-id TC001
+python tests/rag/test_multi_stage_rag.py --test-id TC001
 
 # TC002: 온라인 거래 분쟁 케이스
-python test/rag/test_multi_stage_rag.py --test-id TC002
+python tests/rag/test_multi_stage_rag.py --test-id TC002
 
 # TC003: 서비스 환불 케이스
-python test/rag/test_multi_stage_rag.py --test-id TC003
+python tests/rag/test_multi_stage_rag.py --test-id TC003
 
 # TC004: 콘텐츠 분쟁 케이스
-python test/rag/test_multi_stage_rag.py --test-id TC004
+python tests/rag/test_multi_stage_rag.py --test-id TC004
 ```
 
 #### 3. 결과를 저장하지 않고 실행
 
 ```bash
-python test/rag/test_multi_stage_rag.py --no-save
+python tests/rag/test_multi_stage_rag.py --no-save
 ```
 
 #### 4. 커스텀 출력 디렉토리 지정
 
 ```bash
-python test/rag/test_multi_stage_rag.py --output-dir ./my_results
+python tests/rag/test_multi_stage_rag.py --output-dir ./my_results
 ```
 
 ### 출력 결과
