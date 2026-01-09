@@ -1,6 +1,6 @@
 """
- RunPod SPLADE API   
-SSH    (localhost:8002 -> RunPod:8000)
+로컬에서 RunPod의 SPLADE API 서버를 사용하는 클라이언트
+SSH 터널을 통해 접근 (localhost:8001 -> RunPod:8000)
 """
 
 import requests
@@ -11,7 +11,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-#   
+# 환경 변수 로드
 backend_dir = Path(__file__).parent.parent
 env_file = backend_dir / '.env'
 if env_file.exists():
@@ -23,48 +23,48 @@ else:
     else:
         load_dotenv()
 
-# API URL (SSH   localhost:8002 )
-SPLADE_API_URL = os.getenv('SPLADE_API_URL', 'http://localhost:8002')
+# API URL (SSH 터널을 통해 localhost:8001로 접근)
+SPLADE_API_URL = os.getenv('SPLADE_API_URL', 'http://localhost:8001')
 
 
 class RemoteSPLADERetriever:
-    """RunPod SPLADE API  Retriever"""
+    """RunPod의 SPLADE API를 사용하는 Retriever"""
     
     def __init__(self, api_url: str = None):
         """
         Args:
-            api_url: SPLADE API  URL (: http://localhost:8002)
+            api_url: SPLADE API 서버 URL (기본값: http://localhost:8001)
         """
         self.api_url = api_url or SPLADE_API_URL
         self.base_url = self.api_url.rstrip('/')
     
     def _check_connection(self, silent: bool = False):
-        """API   """
+        """API 서버 연결 확인"""
         try:
             response = requests.get(f"{self.base_url}/health", timeout=5)
             if response.status_code == 200:
                 return True
         except Exception as e:
             if not silent:
-                print(f"  API   : {e}")
+                print(f"⚠️  API 서버 연결 실패: {e}")
                 print(f"   URL: {self.base_url}")
-                print(f"   SSH    .")
+                print(f"   SSH 터널이 연결되어 있는지 확인하세요.")
             return False
         return False
     
     def encode_query(self, query: str) -> np.ndarray:
         """
-         Sparse Vector 
+        쿼리를 Sparse Vector로 인코딩
         
         Args:
-            query:  
+            query: 입력 쿼리
         
         Returns:
-            Sparse vector (numpy array, 30522)
+            Sparse vector (numpy array, 30522차원)
         """
-        #   (    )
+        # 연결 확인 (에러 메시지는 한 번만 출력)
         if not self._check_connection():
-            raise ConnectionError("SPLADE API    .")
+            raise ConnectionError("SPLADE API 서버에 연결할 수 없습니다.")
         
         try:
             response = requests.post(
@@ -80,17 +80,17 @@ class RemoteSPLADERetriever:
     
     def encode_document(self, document: str) -> np.ndarray:
         """
-         Sparse Vector 
+        문서를 Sparse Vector로 인코딩
         
         Args:
-            document:  
+            document: 입력 문서
         
         Returns:
-            Sparse vector (numpy array, 30522)
+            Sparse vector (numpy array, 30522차원)
         """
-        #   ( )
+        # 연결 확인 (조용한 모드)
         if not self._check_connection(silent=True):
-            raise ConnectionError("SPLADE API    .")
+            raise ConnectionError("SPLADE API 서버에 연결할 수 없습니다.")
         
         try:
             response = requests.post(
@@ -102,23 +102,23 @@ class RemoteSPLADERetriever:
             result = response.json()
             return np.array(result['embeddings'][0])
         except requests.exceptions.RequestException as e:
-            raise ConnectionError(f"API   : {e}")
+            raise ConnectionError(f"API 서버 연결 실패: {e}")
         except Exception as e:
             raise RuntimeError(f"Document encoding failed: {e}")
     
     def encode_documents_batch(self, documents: List[str]) -> List[np.ndarray]:
         """
-           
+        여러 문서를 배치로 인코딩
         
         Args:
-            documents:   
+            documents: 입력 문서 리스트
         
         Returns:
-            Sparse vector 
+            Sparse vector 리스트
         """
-        #   ( )
+        # 연결 확인 (조용한 모드)
         if not self._check_connection(silent=True):
-            raise ConnectionError("SPLADE API    .")
+            raise ConnectionError("SPLADE API 서버에 연결할 수 없습니다.")
         
         try:
             response = requests.post(
@@ -130,7 +130,7 @@ class RemoteSPLADERetriever:
             result = response.json()
             return [np.array(emb) for emb in result['embeddings']]
         except requests.exceptions.RequestException as e:
-            raise ConnectionError(f"API   : {e}")
+            raise ConnectionError(f"API 서버 연결 실패: {e}")
         except Exception as e:
             raise RuntimeError(f"Batch document encoding failed: {e}")
     
@@ -140,14 +140,14 @@ class RemoteSPLADERetriever:
         doc_vec: np.ndarray
     ) -> float:
         """
-             (dot product)
+        쿼리와 문서 간 유사도 계산 (dot product)
         
         Args:
-            query_vec:  sparse vector
-            doc_vec:  sparse vector
+            query_vec: 쿼리 sparse vector
+            doc_vec: 문서 sparse vector
         
         Returns:
-             
+            유사도 점수
         """
         try:
             response = requests.post(
@@ -166,7 +166,7 @@ class RemoteSPLADERetriever:
 
 
 class RemoteSPLADEDBRetriever:
-    """RunPod SPLADE API  DB """
+    """RunPod SPLADE API를 사용한 DB 검색"""
     
     def __init__(
         self,
@@ -175,27 +175,27 @@ class RemoteSPLADEDBRetriever:
     ):
         """
         Args:
-            db_config:   
-            api_url: SPLADE API  URL
+            db_config: 데이터베이스 연결 설정
+            api_url: SPLADE API 서버 URL
         """
         self.db_config = db_config
         self.splade_retriever = RemoteSPLADERetriever(api_url)
         self.conn = None
         self.api_available = False
         
-        #     
+        # 초기화 시 실제 연결 테스트
         try:
             if self.splade_retriever._check_connection():
                 self.api_available = True
             else:
                 self.api_available = False
-                raise ConnectionError("API    .")
+                raise ConnectionError("API 서버에 연결할 수 없습니다.")
         except Exception as e:
             self.api_available = False
-            raise ConnectionError(f"API   : {e}")
+            raise ConnectionError(f"API 서버 연결 실패: {e}")
     
     def connect_db(self):
-        """DB """
+        """DB 연결"""
         if self.conn is None or self.conn.closed:
             self.conn = psycopg2.connect(**self.db_config)
     
@@ -204,28 +204,28 @@ class RemoteSPLADEDBRetriever:
         query: str,
         top_k: int = 10
     ) -> List[Dict]:
-        """ SPLADE  (  )"""
-        # API       
+        """법령 SPLADE 검색 (배치 인코딩 사용)"""
+        # API 서버 사용 불가 시 빈 결과 반환
         if not self.api_available:
             return []
         
         self.connect_db()
         
         try:
-            #   (   )
+            # 쿼리 인코딩 (조용한 모드로 연결 확인)
             query_vec = self.splade_retriever.encode_query(query)
             
             if query_vec is None or query_vec.size == 0:
                 return []
         except ConnectionError:
-            #       
+            # 연결 실패 시 조용히 빈 결과 반환
             self.api_available = False
             return []
         except Exception as e:
-            #     
+            # 다른 에러는 한 번만 출력
             return []
         
-        #   chunk 
+        # 모든 법령 chunk 가져오기
         cur = self.conn.cursor()
         cur.execute("""
             SELECT 
@@ -241,19 +241,19 @@ class RemoteSPLADEDBRetriever:
         
         chunks = cur.fetchall()
         
-        #   (32)
+        # 배치 인코딩 (32개씩)
         batch_size = 32
         results = []
         
         for i in range(0, len(chunks), batch_size):
             batch = chunks[i:i+batch_size]
-            contents = [c[2] for c in batch]  # content 
+            contents = [c[2] for c in batch]  # content만 추출
             
             try:
-                #  
+                # 배치 인코딩
                 doc_vecs = self.splade_retriever.encode_documents_batch(contents)
                 
-                #     
+                # 각 문서에 대해 유사도 계산
                 for (chunk_id, doc_id, content, law_name), doc_vec in zip(batch, doc_vecs):
                     score = self.splade_retriever.compute_similarity(query_vec, doc_vec)
                     
@@ -266,10 +266,10 @@ class RemoteSPLADEDBRetriever:
                             'splade_score': float(score)
                         })
             except Exception as e:
-                print(f"       (batch {i//batch_size + 1}): {e}")
+                print(f"  ⚠️  배치 인코딩 실패 (batch {i//batch_size + 1}): {e}")
                 continue
         
-        #   
+        # 점수 기준 정렬
         results.sort(key=lambda x: x['splade_score'], reverse=True)
         
         return results[:top_k]
@@ -279,28 +279,28 @@ class RemoteSPLADEDBRetriever:
         query: str,
         top_k: int = 10
     ) -> List[Dict]:
-        """ SPLADE  (  )"""
-        # API       
+        """기준 SPLADE 검색 (배치 인코딩 사용)"""
+        # API 서버 사용 불가 시 빈 결과 반환
         if not self.api_available:
             return []
         
         self.connect_db()
         
         try:
-            #   (   )
+            # 쿼리 인코딩 (조용한 모드로 연결 확인)
             query_vec = self.splade_retriever.encode_query(query)
             
             if query_vec is None or query_vec.size == 0:
                 return []
         except ConnectionError:
-            #       
+            # 연결 실패 시 조용히 빈 결과 반환
             self.api_available = False
             return []
         except Exception as e:
-            #     
+            # 다른 에러는 한 번만 출력
             return []
         
-        #   chunk 
+        # 모든 기준 chunk 가져오기
         cur = self.conn.cursor()
         cur.execute("""
             SELECT 
@@ -316,19 +316,19 @@ class RemoteSPLADEDBRetriever:
         
         chunks = cur.fetchall()
         
-        #   (32)
+        # 배치 인코딩 (32개씩)
         batch_size = 32
         results = []
         
         for i in range(0, len(chunks), batch_size):
             batch = chunks[i:i+batch_size]
-            contents = [c[2] for c in batch]  # content 
+            contents = [c[2] for c in batch]  # content만 추출
             
             try:
-                #  
+                # 배치 인코딩
                 doc_vecs = self.splade_retriever.encode_documents_batch(contents)
                 
-                #     
+                # 각 문서에 대해 유사도 계산
                 for (chunk_id, doc_id, content, item), doc_vec in zip(batch, doc_vecs):
                     score = self.splade_retriever.compute_similarity(query_vec, doc_vec)
                     
@@ -341,28 +341,28 @@ class RemoteSPLADEDBRetriever:
                             'splade_score': float(score)
                         })
             except Exception as e:
-                print(f"       (batch {i//batch_size + 1}): {e}")
+                print(f"  ⚠️  배치 인코딩 실패 (batch {i//batch_size + 1}): {e}")
                 continue
         
-        #   
+        # 점수 기준 정렬
         results.sort(key=lambda x: x['splade_score'], reverse=True)
         
         return results[:top_k]
 
 
-#  
+# 사용 예시
 if __name__ == "__main__":
-    # API   
+    # API 서버 연결 확인
     retriever = RemoteSPLADERetriever()
     
     if retriever._check_connection():
-        print(" SPLADE API   !")
+        print("✅ SPLADE API 서버 연결 성공!")
         
-        # 
-        query = " 750 "
+        # 테스트
+        query = "민법 제750조 불법행위"
         print(f"\nQuery: {query}")
         query_vec = retriever.encode_query(query)
-        print(f" Encoded (shape: {query_vec.shape}, non-zero: {np.count_nonzero(query_vec)})")
+        print(f"✅ Encoded (shape: {query_vec.shape}, non-zero: {np.count_nonzero(query_vec)})")
     else:
-        print(" SPLADE API   ")
-        print("   SSH  : ssh -L 8002:localhost:8000 [user]@[host] -p [port]")
+        print("❌ SPLADE API 서버 연결 실패")
+        print("   SSH 터널을 확인하세요: ssh -L 8001:localhost:8000 [user]@[host] -p [port]")

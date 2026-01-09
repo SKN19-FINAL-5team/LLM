@@ -1,6 +1,6 @@
 """
-SPLADE PoC  
-Dense Vector(KURE-v1) vs BM25 Sparse vs SPLADE 
+SPLADE PoC 평가 스크립트
+Dense Vector(KURE-v1) vs BM25 Sparse vs SPLADE 비교
 """
 
 import json
@@ -10,41 +10,41 @@ from typing import List, Dict, Optional
 from dotenv import load_dotenv
 from datetime import datetime
 
-#    
+# 프로젝트 루트 경로 추가
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from app.rag.multi_stage_retriever_v2 import MultiStageRetrieverV2
 from scripts.splade.test_splade_bm25 import BM25SparseRetriever
 
-# SPLADE  (RunPod API     )
+# SPLADE는 선택적 (RunPod API 서버 또는 로컬 직접 실행)
 SPLADE_AVAILABLE = False
 NaverSPLADEDBRetriever = None
 RemoteSPLADEDBRetriever = None
 
-# 1. RunPod API    ()
+# 1. RunPod API 서버 방식 시도 (우선)
 try:
     from scripts.splade.test_splade_remote import RemoteSPLADEDBRetriever
     import requests
-    # API   
+    # API 서버 연결 확인
     api_url = os.getenv('SPLADE_API_URL', 'http://localhost:8001')
     try:
         response = requests.get(f"{api_url}/health", timeout=5)
         if response.status_code == 200:
             SPLADE_AVAILABLE = True
-            print(f" SPLADE API    ({api_url})")
+            print(f"✅ SPLADE API 서버 연결 성공 ({api_url})")
         else:
-            print(f"  SPLADE API    ( : {response.status_code})")
+            print(f"⚠️  SPLADE API 서버 응답 오류 (상태 코드: {response.status_code})")
     except requests.exceptions.RequestException:
-        print(f"  SPLADE API    ({api_url})")
-        print("   SSH    .")
-        print("        .")
+        print(f"⚠️  SPLADE API 서버 연결 실패 ({api_url})")
+        print("   SSH 터널이 연결되어 있는지 확인하세요.")
+        print("   또는 로컬 직접 실행 방식을 사용하세요.")
 except ImportError:
-    print("  RemoteSPLADEDBRetriever    .")
+    print("⚠️  RemoteSPLADEDBRetriever 모듈을 찾을 수 없습니다.")
 
-# 2.     (API   )
+# 2. 로컬 직접 실행 방식 (API 서버 실패 시)
 if not SPLADE_AVAILABLE:
     try:
-        # torch   (  )
+        # torch 버전 확인 (로컬 환경 체크)
         import torch
         torch_version = torch.__version__
         try:
@@ -54,35 +54,35 @@ if not SPLADE_AVAILABLE:
             torch_too_old = False
         
         if torch_too_old:
-            print(f"  torch  2.6  (: {torch_version})")
-            print("     SPLADE   .")
-            print("    :")
-            print("     1. RunPod API   ()")
-            print("     2. torch : pip install --upgrade torch>=2.6")
-            print("   SPLADE  . Dense BM25 .")
+            print(f"⚠️  torch 버전이 2.6 미만입니다 (현재: {torch_version})")
+            print("   로컬 환경에서는 SPLADE를 사용할 수 없습니다.")
+            print("   해결 방법:")
+            print("     1. RunPod API 서버 사용 (권장)")
+            print("     2. torch 업그레이드: pip install --upgrade torch>=2.6")
+            print("   SPLADE 평가는 건너뜁니다. Dense와 BM25만 평가합니다.")
             SPLADE_AVAILABLE = False
         else:
             from scripts.splade.test_splade_naver import NaverSPLADEDBRetriever
             SPLADE_AVAILABLE = True
-            print(" SPLADE     ")
+            print("✅ SPLADE 로컬 직접 실행 모드 사용")
     except ImportError as e:
-        print(f"  SPLADE    : {e}")
-        print("   SPLADE  .")
+        print(f"⚠️  SPLADE 로컬 모듈 로드 실패: {e}")
+        print("   SPLADE 평가는 건너뜁니다.")
         SPLADE_AVAILABLE = False
     except Exception as e:
         error_str = str(e)
-        # torch   
+        # torch 버전 문제인 경우
         if "torch.load" in error_str or "CVE-2025-32434" in error_str or "torch>=2.6" in error_str:
-            print(f"  torch   SPLADE   : {error_str}")
-            print("     SPLADE .")
-            print("    :")
-            print("     1. RunPod API   ()")
-            print("     2. torch : pip install --upgrade torch>=2.6")
-            print("   Dense BM25 .")
+            print(f"⚠️  torch 버전 문제로 SPLADE를 사용할 수 없습니다: {error_str}")
+            print("   로컬 환경에서는 SPLADE를 건너뜁니다.")
+            print("   해결 방법:")
+            print("     1. RunPod API 서버 사용 (권장)")
+            print("     2. torch 업그레이드: pip install --upgrade torch>=2.6")
+            print("   Dense와 BM25만 평가합니다.")
             SPLADE_AVAILABLE = False
         else:
-            print(f"  SPLADE    : {e}")
-            print("   SPLADE  .")
+            print(f"⚠️  SPLADE 로컬 모듈 로드 실패: {e}")
+            print("   SPLADE 평가는 건너뜁니다.")
             SPLADE_AVAILABLE = False
 
 
@@ -90,9 +90,9 @@ def evaluate_law_tests(
     dense_retriever: MultiStageRetrieverV2,
     sparse_retriever: BM25SparseRetriever,
     test_cases: List[Dict],
-    splade_retriever = None  # NaverSPLADEDBRetriever  RemoteSPLADEDBRetriever
+    splade_retriever = None  # NaverSPLADEDBRetriever 또는 RemoteSPLADEDBRetriever
 ) -> Dict:
-    """  """
+    """법령 테스트 평가"""
     results = {
         'dense': {'success': 0, 'total': 0, 'details': []},
         'sparse': {'success': 0, 'total': 0, 'details': []}
@@ -106,13 +106,13 @@ def evaluate_law_tests(
         expected_articles = test.get('expected_articles', [])
         expected_law = test.get('expected_law')
         
-        # Dense 
+        # Dense 검색
         try:
             dense_results = dense_retriever.search(query, top_k=5, debug=False)
             dense_success = False
             
             if expected_article:
-                #   
+                # 단일 조문 매칭
                 for r in dense_results['results'][:3]:
                     content = r.get('content', '')
                     metadata = r.get('source_info', {})
@@ -127,7 +127,7 @@ def evaluate_law_tests(
                             dense_success = True
                             break
             elif expected_articles:
-                #    (  )
+                # 다중 조문 매칭 (하나라도 매칭되면 성공)
                 for r in dense_results['results'][:3]:
                     content = r.get('content', '')
                     for article in expected_articles:
@@ -137,7 +137,7 @@ def evaluate_law_tests(
                     if dense_success:
                         break
             elif expected_law:
-                #  
+                # 법령명만 매칭
                 for r in dense_results['results'][:3]:
                     content = r.get('content', '')
                     metadata = r.get('source_info', {})
@@ -147,16 +147,16 @@ def evaluate_law_tests(
                         dense_success = True
                         break
         except Exception as e:
-            print(f"    Dense  : {e}")
+            print(f"  ⚠️  Dense 검색 오류: {e}")
             dense_success = False
         
-        # Sparse 
+        # Sparse 검색
         try:
             sparse_results = sparse_retriever.search_law_bm25(query, top_k=5)
             sparse_success = False
             
             if expected_article:
-                #   
+                # 단일 조문 매칭
                 for r in sparse_results[:3]:
                     content = r.get('content', '')
                     law_name = r.get('law_name', '')
@@ -170,7 +170,7 @@ def evaluate_law_tests(
                             sparse_success = True
                             break
             elif expected_articles:
-                #   
+                # 다중 조문 매칭
                 for r in sparse_results[:3]:
                     content = r.get('content', '')
                     for article in expected_articles:
@@ -180,7 +180,7 @@ def evaluate_law_tests(
                     if sparse_success:
                         break
             elif expected_law:
-                #  
+                # 법령명만 매칭
                 for r in sparse_results[:3]:
                     content = r.get('content', '')
                     law_name = r.get('law_name', '')
@@ -189,20 +189,20 @@ def evaluate_law_tests(
                         sparse_success = True
                         break
         except Exception as e:
-            print(f"    Sparse  : {e}")
+            print(f"  ⚠️  Sparse 검색 오류: {e}")
             sparse_success = False
         
-        # SPLADE 
+        # SPLADE 검색
         splade_success = False
         if splade_retriever:
             try:
                 splade_results = splade_retriever.search_law_splade(query, top_k=5)
                 
-                #     (  )
+                # 결과가 비어있으면 실패로 간주 (연결 실패 등)
                 if not splade_results:
                     splade_success = False
                 elif expected_article:
-                    #   
+                    # 단일 조문 매칭
                     for r in splade_results[:3]:
                         content = r.get('content', '')
                         law_name = r.get('law_name', '')
@@ -216,7 +216,7 @@ def evaluate_law_tests(
                                 splade_success = True
                                 break
                 elif expected_articles:
-                    #   
+                    # 다중 조문 매칭
                     for r in splade_results[:3]:
                         content = r.get('content', '')
                         for article in expected_articles:
@@ -226,7 +226,7 @@ def evaluate_law_tests(
                         if splade_success:
                             break
                 elif expected_law:
-                    #  
+                    # 법령명만 매칭
                     for r in splade_results[:3]:
                         content = r.get('content', '')
                         law_name = r.get('law_name', '')
@@ -235,7 +235,7 @@ def evaluate_law_tests(
                             splade_success = True
                             break
             except Exception as e:
-                print(f"    SPLADE  : {e}")
+                print(f"  ⚠️  SPLADE 검색 오류: {e}")
                 splade_success = False
         
         results['dense']['total'] += 1
@@ -268,10 +268,10 @@ def evaluate_law_tests(
         
         print(f"\n[{test['id']}] {test['category']}")
         print(f"Query: {query}")
-        print(f"Dense: {'' if dense_success else ''}")
-        print(f"Sparse: {'' if sparse_success else ''}")
+        print(f"Dense: {'✅' if dense_success else '❌'}")
+        print(f"Sparse: {'✅' if sparse_success else '❌'}")
         if splade_retriever:
-            print(f"SPLADE: {'' if splade_success else ''}")
+            print(f"SPLADE: {'✅' if splade_success else '❌'}")
     
     return results
 
@@ -280,9 +280,9 @@ def evaluate_criteria_tests(
     dense_retriever: MultiStageRetrieverV2,
     sparse_retriever: BM25SparseRetriever,
     test_cases: List[Dict],
-    splade_retriever = None  # NaverSPLADEDBRetriever  RemoteSPLADEDBRetriever
+    splade_retriever = None  # NaverSPLADEDBRetriever 또는 RemoteSPLADEDBRetriever
 ) -> Dict:
-    """  """
+    """기준 테스트 평가"""
     results = {
         'dense': {'success': 0, 'total': 0, 'details': []},
         'sparse': {'success': 0, 'total': 0, 'details': []}
@@ -296,7 +296,7 @@ def evaluate_criteria_tests(
         expected_category = test.get('expected_category')
         not_expected = test.get('not_expected')
         
-        # Dense 
+        # Dense 검색
         try:
             dense_results = dense_retriever.search(query, top_k=5, debug=False)
             dense_success = False
@@ -305,25 +305,25 @@ def evaluate_criteria_tests(
                 content = r.get('content', '')
                 metadata = r.get('source_info', {})
                 
-                #  
+                # 품목명 매칭
                 if expected_item:
                     if expected_item in content:
-                        #   
+                        # 부정 키워드 체크
                         if not_expected and not_expected in content:
                             continue
                         dense_success = True
                         break
                 
-                #  
+                # 카테고리 매칭
                 if expected_category:
                     if expected_category in content:
                         dense_success = True
                         break
         except Exception as e:
-            print(f"    Dense  : {e}")
+            print(f"  ⚠️  Dense 검색 오류: {e}")
             dense_success = False
         
-        # Sparse 
+        # Sparse 검색
         try:
             sparse_results = sparse_retriever.search_criteria_bm25(query, top_k=5)
             sparse_success = False
@@ -332,25 +332,25 @@ def evaluate_criteria_tests(
                 content = r.get('content', '')
                 item = r.get('item', '')
                 
-                #  
+                # 품목명 매칭
                 if expected_item:
                     if expected_item in content or expected_item in item:
-                        #   
+                        # 부정 키워드 체크
                         if not_expected and not_expected in content:
                             continue
                         sparse_success = True
                         break
                 
-                #  
+                # 카테고리 매칭
                 if expected_category:
                     if expected_category in content:
                         sparse_success = True
                         break
         except Exception as e:
-            print(f"    Sparse  : {e}")
+            print(f"  ⚠️  Sparse 검색 오류: {e}")
             sparse_success = False
         
-        # SPLADE 
+        # SPLADE 검색
         splade_success = False
         if splade_retriever:
             try:
@@ -360,22 +360,22 @@ def evaluate_criteria_tests(
                     content = r.get('content', '')
                     item = r.get('item', '')
                     
-                    #  
+                    # 품목명 매칭
                     if expected_item:
                         if expected_item in content or expected_item in item:
-                            #   
+                            # 부정 키워드 체크
                             if not_expected and not_expected in content:
                                 continue
                             splade_success = True
                             break
                     
-                    #  
+                    # 카테고리 매칭
                     if expected_category:
                         if expected_category in content:
                             splade_success = True
                             break
             except Exception as e:
-                print(f"    SPLADE  : {e}")
+                print(f"  ⚠️  SPLADE 검색 오류: {e}")
                 splade_success = False
         
         results['dense']['total'] += 1
@@ -408,10 +408,10 @@ def evaluate_criteria_tests(
         
         print(f"\n[{test['id']}] {test['category']}")
         print(f"Query: {query}")
-        print(f"Dense: {'' if dense_success else ''}")
-        print(f"Sparse: {'' if sparse_success else ''}")
+        print(f"Dense: {'✅' if dense_success else '❌'}")
+        print(f"Sparse: {'✅' if sparse_success else '❌'}")
         if splade_retriever:
-            print(f"SPLADE: {'' if splade_success else ''}")
+            print(f"SPLADE: {'✅' if splade_success else '❌'}")
     
     return results
 
@@ -419,7 +419,7 @@ def evaluate_criteria_tests(
 def main():
     load_dotenv()
     
-    # DB 
+    # DB 설정
     db_config = {
         'host': os.getenv('DB_HOST', 'localhost'),
         'port': int(os.getenv('DB_PORT', 5432)),
@@ -428,76 +428,76 @@ def main():
         'password': os.getenv('DB_PASSWORD', 'postgres')
     }
     
-    # Retriever 
-    print(" Retriever  ...")
+    # Retriever 초기화
+    print("🔧 Retriever 초기화 중...")
     dense_retriever = MultiStageRetrieverV2(db_config)
     sparse_retriever = BM25SparseRetriever(db_config)
     
-    # SPLADE Retriever  ()
+    # SPLADE Retriever 초기화 (선택적)
     splade_retriever = None
     if SPLADE_AVAILABLE:
         try:
-            # RunPod API    
+            # RunPod API 서버 방식 우선 사용
             if RemoteSPLADEDBRetriever is not None:
                 api_url = os.getenv('SPLADE_API_URL', 'http://localhost:8001')
-                print(f"  SPLADE Retriever   (RunPod API : {api_url})...")
+                print(f"  SPLADE Retriever 초기화 시도 (RunPod API 서버: {api_url})...")
                 try:
                     splade_retriever = RemoteSPLADEDBRetriever(db_config, api_url=api_url)
-                    print(f"   SPLADE Retriever   (RunPod API  )")
+                    print(f"  ✅ SPLADE Retriever 초기화 성공 (RunPod API 서버 사용)")
                 except ConnectionError as e:
-                    print(f"    API   : {e}")
-                    print(f"        ...")
-                    #   
-                    splade_retriever = None  #     
+                    print(f"  ⚠️  API 서버 연결 실패: {e}")
+                    print(f"  💡 로컬 직접 실행 모드로 전환 시도...")
+                    # 로컬 모드로 전환
+                    splade_retriever = None  # 아래 로컬 모드 코드로 진행
             
-            #     (API     )
+            # 로컬 직접 실행 방식 (API 서버 실패 시 또는 처음부터)
             if splade_retriever is None:
                 if NaverSPLADEDBRetriever is not None:
                     import torch
                     use_gpu = torch.cuda.is_available()
                     device = 'cuda' if use_gpu else 'cpu'
-                    print(f"  SPLADE Retriever   (  )...")
-                    print(f"  GPU  : {use_gpu}, Device: {device}")
+                    print(f"  SPLADE Retriever 초기화 시도 (로컬 직접 실행)...")
+                    print(f"  GPU 사용 가능: {use_gpu}, Device: {device}")
                     
-                    # torch  
+                    # torch 버전 재확인
                     torch_version = torch.__version__
                     try:
                         major, minor = map(int, torch_version.split('.')[:2])
                         if major < 2 or (major == 2 and minor < 6):
-                            print(f"    torch  2.6  (: {torch_version})")
-                            print("  SPLADE     .")
-                            print("       .")
+                            print(f"  ⚠️  torch 버전이 2.6 미만입니다 (현재: {torch_version})")
+                            print("  SPLADE 모델 로드가 실패할 수 있습니다.")
+                            print("  시도는 하지만 실패 시 자동으로 건너뜁니다.")
                     except:
                         pass
                     
                     try:
                         splade_retriever = NaverSPLADEDBRetriever(db_config, device=device)
-                        #    ( None )
+                        # 모델 로드 시도 (실패하면 None 반환)
                         splade_retriever.splade_retriever.load_model()
-                        print(f"   SPLADE Retriever   (, device: {device})")
+                        print(f"  ✅ SPLADE Retriever 초기화 성공 (로컬, device: {device})")
                     except RuntimeError as e:
-                        if "torch " in str(e) or "torch>=2.6" in str(e):
-                            print(f"    torch   SPLADE   .")
-                            print("  Dense BM25 .")
+                        if "torch 버전" in str(e) or "torch>=2.6" in str(e):
+                            print(f"  ⚠️  torch 버전 문제로 SPLADE를 사용할 수 없습니다.")
+                            print("  Dense와 BM25만 평가합니다.")
                             splade_retriever = None
                         else:
                             raise
                 else:
-                    # RemoteSPLADEDBRetriever  NaverSPLADEDBRetriever  
+                    # RemoteSPLADEDBRetriever도 없고 NaverSPLADEDBRetriever도 없는 경우
                     if splade_retriever is None:
-                        raise RuntimeError("SPLADE Retriever   . (   )")
+                        raise RuntimeError("SPLADE Retriever를 사용할 수 없습니다. (모듈을 찾을 수 없음)")
         except Exception as e:
-            print(f"    SPLADE Retriever  : {e}")
-            print("  SPLADE  . Dense BM25 .")
+            print(f"  ⚠️  SPLADE Retriever 초기화 실패: {e}")
+            print("  SPLADE 평가는 건너뜁니다. Dense와 BM25만 평가합니다.")
             splade_retriever = None
     else:
-        print("    SPLADE   ")
-        print("     Dense BM25 .")
-        print("     SPLADE :")
-        print("     1. RunPod SPLADE API    SSH   ()")
-        print("     2.   torch>=2.6 ")
+        print("  ⚠️  SPLADE 모듈 사용 불가")
+        print("     Dense와 BM25만 평가합니다.")
+        print("     SPLADE를 사용하려면:")
+        print("     1. RunPod에 SPLADE API 서버 실행 후 SSH 터널 연결 (권장)")
+        print("     2. 또는 로컬에서 torch>=2.6으로 업그레이드")
     
-    #   
+    # 테스트 케이스 로드
     script_dir = os.path.dirname(os.path.abspath(__file__))
     law_test_file = os.path.join(script_dir, 'test_cases_splade_law.json')
     criteria_test_file = os.path.join(script_dir, 'test_cases_splade_criteria.json')
@@ -510,25 +510,25 @@ def main():
     
     print("=" * 80)
     if splade_retriever:
-        print("SPLADE PoC : Dense vs BM25 vs SPLADE ")
+        print("SPLADE PoC 평가: Dense vs BM25 vs SPLADE 비교")
     else:
-        print("SPLADE PoC : Dense vs BM25  (SPLADE   )")
+        print("SPLADE PoC 평가: Dense vs BM25 비교 (SPLADE 접근 권한 없음)")
     print("=" * 80)
     
-    #  
-    print("\n\n===    ===")
+    # 법령 테스트
+    print("\n\n=== 법령 검색 평가 ===")
     law_results = evaluate_law_tests(dense_retriever, sparse_retriever, law_tests, splade_retriever)
     
-    #  
-    print("\n\n===    ===")
+    # 기준 테스트
+    print("\n\n=== 기준 검색 평가 ===")
     criteria_results = evaluate_criteria_tests(dense_retriever, sparse_retriever, criteria_tests, splade_retriever)
     
-    #  
+    # 결과 출력
     print("\n\n" + "=" * 80)
-    print(" ")
+    print("최종 결과")
     print("=" * 80)
     
-    print("\n :")
+    print("\n법령 검색:")
     methods = ['dense', 'sparse']
     if splade_retriever and 'splade' in law_results:
         methods.append('splade')
@@ -539,9 +539,9 @@ def main():
             rate = (success / total * 100) if total > 0 else 0
             print(f"  {method.upper()}: {success}/{total} ({rate:.1f}%)")
     if not (splade_retriever and 'splade' in law_results):
-        print(f"  SPLADE:   (torch   API   )")
+        print(f"  SPLADE: 사용 불가 (torch 버전 또는 API 서버 연결 필요)")
     
-    print("\n :")
+    print("\n기준 검색:")
     methods = ['dense', 'sparse']
     if splade_retriever and 'splade' in criteria_results:
         methods.append('splade')
@@ -552,15 +552,15 @@ def main():
             rate = (success / total * 100) if total > 0 else 0
             print(f"  {method.upper()}: {success}/{total} ({rate:.1f}%)")
     if not (splade_retriever and 'splade' in criteria_results):
-        print(f"  SPLADE:   (torch   API   )")
+        print(f"  SPLADE: 사용 불가 (torch 버전 또는 API 서버 연결 필요)")
     
-    #  
+    # 전체 통계
     total_dense_success = law_results['dense']['success'] + criteria_results['dense']['success']
     total_dense_total = law_results['dense']['total'] + criteria_results['dense']['total']
     total_sparse_success = law_results['sparse']['success'] + criteria_results['sparse']['success']
     total_sparse_total = law_results['sparse']['total'] + criteria_results['sparse']['total']
     
-    print("\n:")
+    print("\n전체:")
     dense_rate = (total_dense_success / total_dense_total * 100) if total_dense_total > 0 else 0
     sparse_rate = (total_sparse_success / total_sparse_total * 100) if total_sparse_total > 0 else 0
     print(f"  DENSE: {total_dense_success}/{total_dense_total} ({dense_rate:.1f}%)")
@@ -572,9 +572,9 @@ def main():
         splade_rate = (total_splade_success / total_splade_total * 100) if total_splade_total > 0 else 0
         print(f"  SPLADE: {total_splade_success}/{total_splade_total} ({splade_rate:.1f}%)")
     else:
-        print(f"  SPLADE:   (torch   API   )")
+        print(f"  SPLADE: 사용 불가 (torch 버전 또는 API 서버 연결 필요)")
     
-    #  
+    # 결과 저장
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     results_file = os.path.join(script_dir, f'splade_poc_results_{timestamp}.json')
     
@@ -629,7 +629,7 @@ def main():
         }
     }
     
-    # SPLADE   ( )
+    # SPLADE 결과 추가 (있는 경우)
     if splade_retriever and 'splade' in law_results:
         results_summary['law_results']['splade'] = {
             'success': law_results['splade']['success'],
@@ -658,9 +658,9 @@ def main():
     with open(results_file, 'w', encoding='utf-8') as f:
         json.dump(results_summary, f, ensure_ascii=False, indent=2)
     
-    print(f"\n  : {results_file}")
+    print(f"\n✅ 결과 저장: {results_file}")
     
-    #  
+    # 리소스 정리
     dense_retriever.close()
 
 

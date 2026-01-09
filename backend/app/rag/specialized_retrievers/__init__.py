@@ -1,6 +1,6 @@
 """
 Specialized Retrievers Package
-    
+데이터 타입별 전문 검색기 모듈
 """
 
 from .law_retriever import LawRetriever

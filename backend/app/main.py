@@ -9,16 +9,16 @@ from fastmcp import FastMCP
 
 from app.rag import VectorRetriever, RAGGenerator
 
-#   
+# 환경 변수 로드
 load_dotenv()
 
 app = FastAPI(
-    title=" API",
+    title="똑소리 API",
     version="0.3.0",
-    description="    RAG  API"
+    description="한국 소비자 분쟁 조정 RAG 챗봇 API"
 )
 
-# CORS 
+# CORS 설정
 cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5173').split(',')
 app.add_middleware(
     CORSMiddleware,
@@ -28,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# DB 
+# DB 설정
 db_config = {
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': int(os.getenv('DB_PORT', 5432)),
@@ -37,12 +37,12 @@ db_config = {
     'password': os.getenv('DB_PASSWORD', 'postgres')
 }
 
-# RAG  
+# RAG 컴포넌트 초기화
 retriever = VectorRetriever(db_config)
 generator = RAGGenerator()
 
 
-# Request/Response 
+# Request/Response 모델
 class ChatRequest(BaseModel):
     message: str
     top_k: Optional[int] = 5
@@ -64,21 +64,21 @@ class SearchRequest(BaseModel):
     agencies: Optional[List[str]] = None
 
 
-# API 
+# API 엔드포인트
 @app.get("/")
 async def root():
     return {
-        "message": " API    .",
+        "message": "똑소리 API 서버가 정상적으로 실행 중입니다.",
         "version": "0.3.0",
-        "features": ["RAG ", "LLM  "]
+        "features": ["RAG 검색", "LLM 답변 생성"]
     }
 
 
 @app.get("/health")
 async def health_check():
-    """  """
+    """서버 상태 확인"""
     try:
-        # DB  
+        # DB 연결 테스트
         retriever.connect_db()
         retriever.close()
         return {"status": "healthy", "database": "connected"}
@@ -89,16 +89,16 @@ async def health_check():
 @app.post("/search")
 async def search(request: SearchRequest):
     """
-    Vector DB    (LLM    )
+    Vector DB에서 유사한 사례 검색 (LLM 답변 생성 없이 검색만)
     
     Args:
-        query:  
-        top_k:    
-        chunk_types:    (: ['decision', 'reasoning'])
-        agencies:   (: ['kca', 'ecmc'])
+        query: 검색 쿼리
+        top_k: 반환할 최대 결과 수
+        chunk_types: 필터링할 청크 타입 (예: ['decision', 'reasoning'])
+        agencies: 필터링할 기관 (예: ['kca', 'ecmc'])
     
     Returns:
-          
+        검색된 청크 리스트
     """
     try:
         chunks = retriever.search(
@@ -115,7 +115,7 @@ async def search(request: SearchRequest):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"   : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"검색 중 오류 발생: {str(e)}")
     finally:
         retriever.close()
 
@@ -123,19 +123,19 @@ async def search(request: SearchRequest):
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """
-    RAG    
+    RAG 기반 챗봇 응답 생성
     
     Args:
-        message:  
-        top_k:    
-        chunk_types:   
-        agencies:  
+        message: 사용자 질문
+        top_k: 검색할 최대 청크 수
+        chunk_types: 필터링할 청크 타입
+        agencies: 필터링할 기관
     
     Returns:
-        LLM     
+        LLM이 생성한 답변 및 참고 자료
     """
     try:
-        # 1. Vector DB   
+        # 1. Vector DB에서 유사 청크 검색
         chunks = retriever.search(
             query=request.message,
             top_k=request.top_k,
@@ -145,19 +145,19 @@ async def chat(request: ChatRequest):
         
         if not chunks:
             return ChatResponse(
-                answer=".      .   ?",
+                answer="죄송합니다. 관련된 분쟁조정 사례를 찾을 수 없습니다. 다른 질문을 해주시겠어요?",
                 chunks_used=0,
                 model=generator.model,
                 sources=[]
             )
         
-        # 2. LLM  
+        # 2. LLM으로 답변 생성
         result = generator.generate_answer(
             query=request.message,
             chunks=chunks
         )
         
-        # 3.  
+        # 3. 응답 포맷팅
         sources = [
             {
                 'case_no': chunk.get('case_no'),
@@ -177,7 +177,7 @@ async def chat(request: ChatRequest):
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"    : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"답변 생성 중 오류 발생: {str(e)}")
     finally:
         retriever.close()
 
@@ -185,19 +185,19 @@ async def chat(request: ChatRequest):
 @app.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
     """
-    RAG     
+    RAG 기반 스트리밍 챗봇 응답 생성
     
     Args:
-        message:  
-        top_k:    
-        chunk_types:   
-        agencies:  
+        message: 사용자 질문
+        top_k: 검색할 최대 청크 수
+        chunk_types: 필터링할 청크 타입
+        agencies: 필터링할 기관
     
     Returns:
-          
+        실시간 스트리밍 응답
     """
     try:
-        # Vector DB   
+        # Vector DB에서 유사 청크 검색
         chunks = retriever.search(
             query=request.message,
             top_k=request.top_k,
@@ -207,10 +207,10 @@ async def chat_stream(request: ChatRequest):
         
         if not chunks:
             async def no_results():
-                yield ".      ."
+                yield "죄송합니다. 관련된 분쟁조정 사례를 찾을 수 없습니다."
             return StreamingResponse(no_results(), media_type="text/plain")
         
-        #   
+        # 스트리밍 답변 생성
         return StreamingResponse(
             generator.generate_answer_stream(
                 query=request.message,
@@ -220,7 +220,7 @@ async def chat_stream(request: ChatRequest):
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"    : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"답변 생성 중 오류 발생: {str(e)}")
     finally:
         retriever.close()
 
@@ -228,19 +228,19 @@ async def chat_stream(request: ChatRequest):
 @app.get("/case/{case_uid}")
 async def get_case(case_uid: str):
     """
-        
+    특정 사례의 전체 정보 조회
     
     Args:
-        case_uid:   ID
+        case_uid: 사례 고유 ID
     
     Returns:
-           
+        해당 사례의 모든 청크
     """
     try:
         chunks = retriever.get_case_chunks(case_uid)
         
         if not chunks:
-            raise HTTPException(status_code=404, detail="   .")
+            raise HTTPException(status_code=404, detail="사례를 찾을 수 없습니다.")
         
         return {
             "case_uid": case_uid,
@@ -251,7 +251,7 @@ async def get_case(case_uid: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"    : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"사례 조회 중 오류 발생: {str(e)}")
     finally:
         retriever.close()
 
