@@ -358,7 +358,7 @@ docker-compose up --build
 
 ### 6.2. RAG 시스템 테스트
 
-- **[인터랙티브 RAG 테스트 도구](test/rag/interactive_rag_test.py)**
+- **[인터랙티브 RAG 테스트 도구](tests/rag/interactive_rag_test.py)**
   - CLI 기반 인터랙티브 테스트 인터페이스
   - 단일 검색 vs 멀티 스테이지 검색 비교 분석
   - 유사도 통계 및 기관 추천 결과 비교
@@ -367,7 +367,7 @@ docker-compose up --build
 **사용 방법**:
 ```bash
 conda activate ddoksori
-python test/rag/interactive_rag_test.py
+python tests/rag/interactive_rag_test.py
 ```
 
 ### 6.3. 기타 문서

@@ -14,7 +14,7 @@
 ## 디렉토리 구조
 
 ```
-test/
+tests/
 ├── README.md                       # 본 문서
 ├── unit/                           # 단위 테스트
 │   ├── test_vector_db_schema.py    # Vector DB 스키마 테스트
@@ -43,7 +43,7 @@ test/
 ```bash
 cd /home/maroco/ddoksori_demo
 conda activate ddoksori
-python test/unit/test_vector_db_schema.py
+python tests/unit/test_vector_db_schema.py
 ```
 
 **테스트 항목**:
@@ -58,7 +58,7 @@ python test/unit/test_vector_db_schema.py
 ```bash
 cd /home/maroco/ddoksori_demo
 conda activate ddoksori
-python test/unit/test_chunking_quality.py
+python tests/unit/test_chunking_quality.py
 ```
 
 **테스트 항목**:
@@ -73,7 +73,7 @@ python test/unit/test_chunking_quality.py
 ```bash
 cd /home/maroco/ddoksori_demo
 conda activate ddoksori
-python test/unit/test_api.py
+python tests/unit/test_api.py
 ```
 
 **테스트 항목**:
@@ -88,8 +88,8 @@ python test/unit/test_api.py
 ```bash
 cd /home/maroco/ddoksori_demo
 conda activate ddoksori
-python test/integration/test_rag.py
-python test/integration/test_rag_v2.py
+python tests/integration/test_rag.py
+python tests/integration/test_rag_v2.py
 ```
 
 **테스트 항목**:
@@ -104,7 +104,7 @@ python test/integration/test_rag_v2.py
 ```bash
 cd /home/maroco/ddoksori_demo
 conda activate ddoksori
-python test/rag/test_multi_stage_rag.py
+python tests/rag/test_multi_stage_rag.py
 ```
 
 **테스트 항목**:
@@ -116,8 +116,8 @@ python test/rag/test_multi_stage_rag.py
 #### 기관 추천 테스트
 
 ```bash
-python test/rag/test_agency_recommender.py
-python test/rag/test_agency_with_real_data.py
+python tests/rag/test_agency_recommender.py
+python tests/rag/test_agency_with_real_data.py
 ```
 
 ---

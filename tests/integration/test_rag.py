@@ -7,8 +7,10 @@ import os
 import sys
 from dotenv import load_dotenv
 
-# 프로젝트 루트를 Python 경로에 추가
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# 프로젝트 루트와 backend 디렉토리를 Python 경로에 추가
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+sys.path.insert(0, os.path.join(project_root, 'backend'))
 
 from app.rag import VectorRetriever, RAGGenerator
 
