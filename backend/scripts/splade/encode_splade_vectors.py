@@ -1,6 +1,6 @@
 """
-SPLADE Sparse Vector   
- chunk  SPLADE sparse vector  RDB 
+SPLADE Sparse Vector 사전 인코딩 파이프라인
+모든 chunk에 대해 SPLADE sparse vector를 생성하여 RDB에 저장
 """
 
 import os
@@ -13,13 +13,13 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 import numpy as np
 
-#    
+# 프로젝트 루트 경로 추가
 backend_dir = Path(__file__).parent.parent
 project_root = backend_dir.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(backend_dir))
 
-#   
+# 환경 변수 로드
 env_file = backend_dir / '.env'
 if env_file.exists():
     load_dotenv(env_file)
@@ -30,18 +30,18 @@ else:
     else:
         load_dotenv()
 
-# SPLADE  import
+# SPLADE 모듈 import
 try:
     from scripts.splade.test_splade_naver import NaverSPLADERetriever
     from scripts.splade.test_splade_remote import RemoteSPLADERetriever
     SPLADE_AVAILABLE = True
 except ImportError as e:
-    print(f"  SPLADE    : {e}")
+    print(f"⚠️  SPLADE 모듈을 찾을 수 없습니다: {e}")
     SPLADE_AVAILABLE = False
 
 
 class SPLADEEncodingPipeline:
-    """SPLADE sparse vector  """
+    """SPLADE sparse vector 인코딩 파이프라인"""
     
     def __init__(
         self,
@@ -53,40 +53,40 @@ class SPLADEEncodingPipeline:
     ):
         """
         Args:
-            db_config:   
-            batch_size:   (: 32)
-            use_remote:  API   
-            api_url:  API URL (use_remote=True )
-            device:     ('cuda'  'cpu')
+            db_config: 데이터베이스 연결 설정
+            batch_size: 배치 크기 (기본값: 32)
+            use_remote: 원격 API 서버 사용 여부
+            api_url: 원격 API URL (use_remote=True일 때)
+            device: 로컬 모드에서 사용할 디바이스 ('cuda' 또는 'cpu')
         """
         self.db_config = db_config
         self.batch_size = batch_size
         self.conn = None
         self.splade_retriever = None
         
-        # SPLADE Retriever 
+        # SPLADE Retriever 초기화
         if use_remote:
             if api_url is None:
                 api_url = os.getenv('SPLADE_API_URL', 'http://localhost:8001')
             try:
                 self.splade_retriever = RemoteSPLADERetriever(api_url=api_url)
-                print(f"  SPLADE API  : {api_url}")
+                print(f"✅ 원격 SPLADE API 서버 사용: {api_url}")
             except Exception as e:
-                print(f"   API   : {e}")
-                print("      ...")
+                print(f"⚠️  원격 API 서버 연결 실패: {e}")
+                print("   로컬 모드로 전환 시도...")
                 use_remote = False
         
         if not use_remote:
             try:
                 self.splade_retriever = NaverSPLADERetriever(device=device)
                 self.splade_retriever.load_model()
-                print(f"  SPLADE  : device={self.splade_retriever.device}")
+                print(f"✅ 로컬 SPLADE 모델 사용: device={self.splade_retriever.device}")
             except Exception as e:
-                print(f" SPLADE   : {e}")
-                raise RuntimeError("SPLADE    .")
+                print(f"❌ SPLADE 모델 로드 실패: {e}")
+                raise RuntimeError("SPLADE 모델을 사용할 수 없습니다.")
     
     def connect_db(self):
-        """ """
+        """데이터베이스 연결"""
         if self.conn is None or self.conn.closed:
             self.conn = psycopg2.connect(**self.db_config)
             self.conn.autocommit = False
@@ -98,15 +98,15 @@ class SPLADEEncodingPipeline:
         skip_encoded: bool = True
     ) -> List[Tuple[str, str]]:
         """
-          chunk  
+        인코딩이 필요한 chunk 목록 가져오기
         
         Args:
-            doc_type:    (None )
-            limit:   (None )
-            skip_encoded:   chunk 
+            doc_type: 문서 타입 필터 (None이면 전체)
+            limit: 최대 개수 (None이면 전체)
+            skip_encoded: 이미 인코딩된 chunk 건너뛰기
         
         Returns:
-            (chunk_id, content)  
+            (chunk_id, content) 튜플 리스트
         """
         self.connect_db()
         cur = self.conn.cursor()
@@ -148,20 +148,20 @@ class SPLADEEncodingPipeline:
     
     def sparse_vector_to_jsonb(self, sparse_vec: np.ndarray, threshold: float = 0.0) -> Dict[str, float]:
         """
-        Sparse vector JSONB  
-        0     
+        Sparse vector를 JSONB 형식으로 변환
+        0이 아닌 값만 저장하여 공간 효율적
         
         Args:
             sparse_vec: Sparse vector (numpy array)
-            threshold:    
+            threshold: 저장할 최소 가중치 임계값
         
         Returns:
-            {token_id: weight}  
+            {token_id: weight} 형태의 딕셔너리
         """
-        # 0   
+        # 0이 아닌 인덱스 찾기
         non_zero_indices = np.where(sparse_vec > threshold)[0]
         
-        # JSONB   (  )
+        # JSONB 형식으로 변환 (문자열 키로 저장)
         result = {}
         for idx in non_zero_indices:
             weight = float(sparse_vec[idx])
@@ -172,13 +172,13 @@ class SPLADEEncodingPipeline:
     
     def encode_batch(self, chunks: List[Tuple[str, str]]) -> List[Dict]:
         """
-         chunk 
+        배치로 chunk 인코딩
         
         Args:
-            chunks: (chunk_id, content)  
+            chunks: (chunk_id, content) 튜플 리스트
         
         Returns:
-               [{chunk_id, sparse_vector, success}, ...]
+            인코딩 결과 리스트 [{chunk_id, sparse_vector, success}, ...]
         """
         if not chunks:
             return []
@@ -189,22 +189,22 @@ class SPLADEEncodingPipeline:
         results = []
         
         try:
-            #  
+            # 배치 인코딩
             if hasattr(self.splade_retriever, 'encode_documents_batch'):
-                # RemoteSPLADERetriever   
+                # RemoteSPLADERetriever의 배치 인코딩 사용
                 sparse_vectors = self.splade_retriever.encode_documents_batch(contents)
             else:
-                # NaverSPLADERetriever   
+                # NaverSPLADERetriever의 개별 인코딩 사용
                 sparse_vectors = []
                 for content in contents:
                     try:
                         vec = self.splade_retriever.encode_document(content)
                         sparse_vectors.append(vec)
                     except Exception as e:
-                        print(f"      (chunk_id ): {e}")
+                        print(f"  ⚠️  인코딩 실패 (chunk_id 일부): {e}")
                         sparse_vectors.append(None)
             
-            #  
+            # 결과 변환
             for chunk_id, sparse_vec in zip(chunk_ids, sparse_vectors):
                 if sparse_vec is None:
                     results.append({
@@ -214,7 +214,7 @@ class SPLADEEncodingPipeline:
                     })
                     continue
                 
-                # JSONB  
+                # JSONB 형식으로 변환
                 sparse_jsonb = self.sparse_vector_to_jsonb(sparse_vec)
                 
                 results.append({
@@ -224,8 +224,8 @@ class SPLADEEncodingPipeline:
                 })
         
         except Exception as e:
-            print(f"      : {e}")
-            #   
+            print(f"  ⚠️  배치 인코딩 오류: {e}")
+            # 개별 인코딩으로 폴백
             for chunk_id, content in chunks:
                 try:
                     sparse_vec = self.splade_retriever.encode_document(content)
@@ -236,7 +236,7 @@ class SPLADEEncodingPipeline:
                         'success': True
                     })
                 except Exception as e2:
-                    print(f"       (chunk_id: {chunk_id[:50]}...): {e2}")
+                    print(f"  ⚠️  개별 인코딩 실패 (chunk_id: {chunk_id[:50]}...): {e2}")
                     results.append({
                         'chunk_id': chunk_id,
                         'sparse_vector': None,
@@ -247,10 +247,10 @@ class SPLADEEncodingPipeline:
     
     def save_encoded_vectors(self, encoded_results: List[Dict]):
         """
-         sparse vector DB 
+        인코딩된 sparse vector를 DB에 저장
         
         Args:
-            encoded_results: encode_batch() 
+            encoded_results: encode_batch()의 결과
         """
         if not encoded_results:
             return
@@ -272,7 +272,7 @@ class SPLADEEncodingPipeline:
             
             if success and sparse_vector:
                 try:
-                    # JSONB  
+                    # JSONB로 변환하여 저장
                     sparse_jsonb = json.dumps(sparse_vector)
                     
                     cur.execute("""
@@ -287,10 +287,10 @@ class SPLADEEncodingPipeline:
                     
                     success_count += 1
                 except Exception as e:
-                    print(f"    DB   (chunk_id: {chunk_id[:50]}...): {e}")
+                    print(f"  ⚠️  DB 저장 실패 (chunk_id: {chunk_id[:50]}...): {e}")
                     fail_count += 1
             else:
-                #     (  )
+                # 실패한 경우 플래그만 업데이트 (나중에 재시도 가능)
                 try:
                     cur.execute("""
                         UPDATE chunks
@@ -299,7 +299,7 @@ class SPLADEEncodingPipeline:
                     """, (chunk_id,))
                     fail_count += 1
                 except Exception as e:
-                    print(f"       (chunk_id: {chunk_id[:50]}...): {e}")
+                    print(f"  ⚠️  플래그 업데이트 실패 (chunk_id: {chunk_id[:50]}...): {e}")
         
         self.conn.commit()
         cur.close()
@@ -313,18 +313,18 @@ class SPLADEEncodingPipeline:
         resume: bool = True
     ):
         """
-         chunk  SPLADE  
+        모든 chunk에 대해 SPLADE 인코딩 수행
         
         Args:
-            doc_type:   
-            limit:   
-            resume:   chunk 
+            doc_type: 문서 타입 필터
+            limit: 최대 처리 개수
+            resume: 이미 인코딩된 chunk 건너뛰기
         """
         print("\n" + "=" * 80)
-        print("SPLADE Sparse Vector  ")
+        print("SPLADE Sparse Vector 인코딩 시작")
         print("=" * 80)
         
-        #   chunk 
+        # 인코딩 대상 chunk 가져오기
         chunks = self.get_chunks_to_encode(
             doc_type=doc_type,
             limit=limit,
@@ -333,25 +333,25 @@ class SPLADEEncodingPipeline:
         
         total_chunks = len(chunks)
         if total_chunks == 0:
-            print("  chunk .")
+            print("✅ 인코딩할 chunk가 없습니다.")
             return
         
-        print(f"\n  : {total_chunks} chunk")
+        print(f"\n📊 인코딩 대상: {total_chunks}개 chunk")
         if doc_type:
-            print(f"    : {doc_type}")
+            print(f"   문서 타입: {doc_type}")
         
-        #  
+        # 배치 처리
         total_success = 0
         total_fail = 0
         
-        with tqdm(total=total_chunks, desc=" ") as pbar:
+        with tqdm(total=total_chunks, desc="인코딩 진행") as pbar:
             for i in range(0, total_chunks, self.batch_size):
                 batch = chunks[i:i + self.batch_size]
                 
-                #  
+                # 배치 인코딩
                 encoded_results = self.encode_batch(batch)
                 
-                # DB 
+                # DB 저장
                 success_count, fail_count = self.save_encoded_vectors(encoded_results)
                 
                 total_success += success_count
@@ -359,28 +359,28 @@ class SPLADEEncodingPipeline:
                 
                 pbar.update(len(batch))
                 pbar.set_postfix({
-                    '': total_success,
-                    '': total_fail,
-                    '': f"{total_success + total_fail}/{total_chunks}"
+                    '성공': total_success,
+                    '실패': total_fail,
+                    '진행률': f"{total_success + total_fail}/{total_chunks}"
                 })
         
-        #  
+        # 최종 통계
         print("\n" + "=" * 80)
-        print(" ")
+        print("인코딩 완료")
         print("=" * 80)
-        print(f" : {total_success}")
-        print(f" : {total_fail}")
-        print(f"  : {total_success + total_fail} / {total_chunks}")
+        print(f"✅ 성공: {total_success}개")
+        print(f"❌ 실패: {total_fail}개")
+        print(f"📊 총 처리: {total_success + total_fail}개 / {total_chunks}개")
         
         if total_fail > 0:
-            print(f"\n   chunk    .")
+            print(f"\n⚠️  실패한 chunk는 나중에 재시도할 수 있습니다.")
     
     def get_statistics(self) -> Dict:
-        """   """
+        """인코딩 통계 정보 조회"""
         self.connect_db()
         cur = self.conn.cursor()
         
-        #  
+        # 전체 통계
         cur.execute("""
             SELECT 
                 COUNT(*) as total_chunks,
@@ -391,7 +391,7 @@ class SPLADEEncodingPipeline:
         """)
         total_stats = cur.fetchone()
         
-        #   
+        # 문서 타입별 통계
         cur.execute("""
             SELECT 
                 d.doc_type,
@@ -427,22 +427,22 @@ class SPLADEEncodingPipeline:
 
 
 def main():
-    """ """
+    """메인 함수"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='SPLADE Sparse Vector  ')
-    parser.add_argument('--doc-type', type=str, help='   (: law, criteria_*)')
-    parser.add_argument('--limit', type=int, help='  ')
-    parser.add_argument('--batch-size', type=int, default=32, help='  (: 32)')
-    parser.add_argument('--remote', action='store_true', help=' API  ')
-    parser.add_argument('--api-url', type=str, help=' API URL')
-    parser.add_argument('--device', type=str, choices=['cuda', 'cpu'], help='  ')
-    parser.add_argument('--no-resume', action='store_true', help='  chunk ')
-    parser.add_argument('--stats-only', action='store_true', help='  ')
+    parser = argparse.ArgumentParser(description='SPLADE Sparse Vector 인코딩 파이프라인')
+    parser.add_argument('--doc-type', type=str, help='문서 타입 필터 (예: law, criteria_*)')
+    parser.add_argument('--limit', type=int, help='최대 처리 개수')
+    parser.add_argument('--batch-size', type=int, default=32, help='배치 크기 (기본값: 32)')
+    parser.add_argument('--remote', action='store_true', help='원격 API 서버 사용')
+    parser.add_argument('--api-url', type=str, help='원격 API URL')
+    parser.add_argument('--device', type=str, choices=['cuda', 'cpu'], help='로컬 모드 디바이스')
+    parser.add_argument('--no-resume', action='store_true', help='이미 인코딩된 chunk도 재인코딩')
+    parser.add_argument('--stats-only', action='store_true', help='통계만 조회하고 종료')
     
     args = parser.parse_args()
     
-    # DB 
+    # DB 설정
     db_config = {
         'host': os.getenv('DB_HOST', 'localhost'),
         'port': int(os.getenv('DB_PORT', 5432)),
@@ -451,7 +451,7 @@ def main():
         'password': os.getenv('DB_PASSWORD', 'postgres')
     }
     
-    #  
+    # 파이프라인 초기화
     try:
         pipeline = SPLADEEncodingPipeline(
             db_config=db_config,
@@ -461,37 +461,37 @@ def main():
             device=args.device
         )
     except Exception as e:
-        print(f"   : {e}")
+        print(f"❌ 파이프라인 초기화 실패: {e}")
         sys.exit(1)
     
-    #  
+    # 통계만 조회
     if args.stats_only:
         stats = pipeline.get_statistics()
-        print("\n SPLADE  ")
+        print("\n📊 SPLADE 인코딩 통계")
         print("=" * 80)
-        print(f" chunk: {stats['total']['total_chunks']}")
-        print(f" : {stats['total']['encoded_chunks']}")
-        print(f" : {stats['total']['unencoded_chunks']}")
-        print(f" : {stats['total']['encode_rate']:.1f}%")
-        print("\n :")
+        print(f"전체 chunk: {stats['total']['total_chunks']}개")
+        print(f"인코딩 완료: {stats['total']['encoded_chunks']}개")
+        print(f"인코딩 미완료: {stats['total']['unencoded_chunks']}개")
+        print(f"인코딩 완료율: {stats['total']['encode_rate']:.1f}%")
+        print("\n문서 타입별:")
         for dt in stats['by_doc_type']:
             print(f"  {dt['doc_type']}: {dt['encoded']}/{dt['total']} ({dt['rate']:.1f}%)")
         return
     
-    #  
+    # 인코딩 수행
     pipeline.encode_all_chunks(
         doc_type=args.doc_type,
         limit=args.limit,
         resume=not args.no_resume
     )
     
-    #   
+    # 최종 통계 출력
     stats = pipeline.get_statistics()
-    print("\n  ")
+    print("\n📊 최종 통계")
     print("=" * 80)
-    print(f" : {stats['total']['encode_rate']:.1f}%")
+    print(f"인코딩 완료율: {stats['total']['encode_rate']:.1f}%")
     
-    #  
+    # 연결 종료
     if pipeline.conn:
         pipeline.conn.close()
 
