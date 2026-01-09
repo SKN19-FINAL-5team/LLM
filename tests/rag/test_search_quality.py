@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-검색 품질 테스트 스크립트
+   
 
-개선 후 데이터의 검색 품질을 측정합니다.
+     .
 """
 
 import os
@@ -18,10 +18,10 @@ from datetime import datetime
 load_dotenv()
 
 class SearchQualityTester:
-    """검색 품질 테스트"""
+    """  """
     
     def __init__(self):
-        """초기화"""
+        """"""
         try:
             self.conn = psycopg2.connect(
                 host=os.getenv('DB_HOST', 'localhost'),
@@ -31,20 +31,20 @@ class SearchQualityTester:
                 password=os.getenv('DB_PASSWORD', 'postgres')
             )
             self.cur = self.conn.cursor(cursor_factory=RealDictCursor)
-            print("✅ 데이터베이스 연결 성공")
+            print("   ")
         except Exception as e:
-            print(f"❌ 데이터베이스 연결 실패: {e}")
+            print(f"   : {e}")
             sys.exit(1)
         
         self.embed_api_url = os.getenv('EMBED_API_URL', 'http://localhost:8001/embed')
     
     def check_data_status(self) -> Dict:
-        """데이터 상태 확인"""
+        """  """
         print("\n" + "=" * 100)
-        print("데이터 상태 확인")
+        print("  ")
         print("=" * 100)
         
-        # 총 청크 및 임베딩 상태
+        #     
         self.cur.execute("""
             SELECT 
                 COUNT(*) as total_chunks,
@@ -56,22 +56,22 @@ class SearchQualityTester:
         
         stats = dict(self.cur.fetchone())
         
-        print(f"\n📊 청크 통계:")
-        print(f"  - 총 청크: {stats['total_chunks']:,}개")
-        print(f"  - 활성 청크: {stats['active_chunks']:,}개")
-        print(f"  - 임베딩 완료: {stats['embedded_chunks']:,}개")
-        print(f"  - 검색 가능: {stats['searchable_chunks']:,}개")
+        print(f"\n  :")
+        print(f"  -  : {stats['total_chunks']:,}")
+        print(f"  -  : {stats['active_chunks']:,}")
+        print(f"  -  : {stats['embedded_chunks']:,}")
+        print(f"  -  : {stats['searchable_chunks']:,}")
         
         if stats['searchable_chunks'] > 0:
             embed_rate = stats['embedded_chunks'] / stats['total_chunks'] * 100
             searchable_rate = stats['searchable_chunks'] / stats['active_chunks'] * 100
-            print(f"\n  임베딩 완료율: {embed_rate:.1f}%")
-            print(f"  검색 가능율: {searchable_rate:.1f}%")
+            print(f"\n   : {embed_rate:.1f}%")
+            print(f"   : {searchable_rate:.1f}%")
         
         return stats
     
     def get_query_embedding(self, query: str) -> List[float]:
-        """쿼리 임베딩 생성"""
+        """  """
         try:
             response = requests.post(
                 self.embed_api_url,
@@ -82,18 +82,18 @@ class SearchQualityTester:
             embeddings = response.json()['embeddings']
             return embeddings[0]
         except requests.exceptions.RequestException as e:
-            print(f"  ❌ 임베딩 API 오류: {e}")
+            print(f"    API : {e}")
             return None
     
     def search_chunks(self, query: str, top_k: int = 10, 
                      doc_types: List[str] = None) -> List[Dict]:
-        """청크 검색"""
-        # 쿼리 임베딩 생성
+        """ """
+        #   
         query_embedding = self.get_query_embedding(query)
         if query_embedding is None:
             return []
         
-        # 검색
+        # 
         if doc_types:
             query_sql = """
                 SELECT 
@@ -142,11 +142,11 @@ class SearchQualityTester:
         return [dict(row) for row in self.cur.fetchall()]
     
     def evaluate_relevance(self, query: str, result: Dict) -> Dict:
-        """결과 관련성 평가 (간단한 키워드 기반)"""
+        """   (  )"""
         content = result['content'].lower()
         query_terms = query.lower().split()
         
-        # 키워드 매칭
+        #  
         matched_terms = [term for term in query_terms if term in content]
         keyword_score = len(matched_terms) / len(query_terms) if query_terms else 0
         
@@ -157,48 +157,48 @@ class SearchQualityTester:
         }
     
     def run_test_queries(self) -> List[Dict]:
-        """테스트 쿼리 실행"""
+        """  """
         print("\n" + "=" * 100)
-        print("검색 품질 테스트")
+        print("  ")
         print("=" * 100)
         
         test_cases = [
             {
                 'id': 1,
-                'query': '온라인 쇼핑몰에서 구매한 제품이 불량이에요. 환불 받을 수 있나요?',
+                'query': '    .    ?',
                 'doc_types': ['counsel_case', 'mediation_case'],
-                'expected_keywords': ['불량', '환불', '온라인', '쇼핑']
+                'expected_keywords': ['', '', '', '']
             },
             {
                 'id': 2,
-                'query': '배송비가 과다하게 청구되었습니다',
+                'query': '  ',
                 'doc_types': ['counsel_case', 'mediation_case'],
-                'expected_keywords': ['배송비', '청구']
+                'expected_keywords': ['', '']
             },
             {
                 'id': 3,
-                'query': '전자상거래 계약 해지 시 위약금을 받았습니다',
+                'query': '     ',
                 'doc_types': ['counsel_case', 'mediation_case'],
-                'expected_keywords': ['계약', '해지', '위약금']
+                'expected_keywords': ['', '', '']
             },
             {
                 'id': 4,
-                'query': '식품 표시가 잘못되어 있습니다',
+                'query': '   ',
                 'doc_types': ['counsel_case'],
-                'expected_keywords': ['식품', '표시']
+                'expected_keywords': ['', '']
             },
             {
                 'id': 5,
-                'query': '통신판매업자의 거짓 광고',
+                'query': '  ',
                 'doc_types': ['counsel_case', 'mediation_case'],
-                'expected_keywords': ['통신판매', '광고', '거짓']
+                'expected_keywords': ['', '', '']
             }
         ]
         
         results = []
         
         for test_case in test_cases:
-            print(f"\n[테스트 {test_case['id']}] {test_case['query']}")
+            print(f"\n[ {test_case['id']}] {test_case['query']}")
             print("-" * 100)
             
             search_results = self.search_chunks(
@@ -208,7 +208,7 @@ class SearchQualityTester:
             )
             
             if not search_results:
-                print("  ❌ 검색 결과 없음")
+                print("     ")
                 results.append({
                     'test_id': test_case['id'],
                     'query': test_case['query'],
@@ -217,22 +217,22 @@ class SearchQualityTester:
                 })
                 continue
             
-            print(f"  ✅ {len(search_results)}개 결과 발견")
+            print(f"   {len(search_results)}  ")
             
-            # 상위 3개 결과 평가
+            #  3  
             evaluations = []
             for idx, result in enumerate(search_results[:3], 1):
                 eval_result = self.evaluate_relevance(test_case['query'], result)
                 evaluations.append(eval_result)
                 
-                print(f"\n  [{idx}] 유사도: {result['similarity']:.4f}, "
-                      f"키워드 매칭: {eval_result['keyword_score']:.2f}")
-                print(f"      타입: {result['doc_type']}/{result['chunk_type']}, "
-                      f"길이: {result['content_length']}자")
-                print(f"      제목: {result['title'][:80]}")
-                print(f"      내용: {result['content'][:150].replace(chr(10), ' ')}...")
+                print(f"\n  [{idx}] : {result['similarity']:.4f}, "
+                      f" : {eval_result['keyword_score']:.2f}")
+                print(f"      : {result['doc_type']}/{result['chunk_type']}, "
+                      f": {result['content_length']}")
+                print(f"      : {result['title'][:80]}")
+                print(f"      : {result['content'][:150].replace(chr(10), ' ')}...")
             
-            # 테스트 결과 저장
+            #   
             avg_similarity = sum(e['similarity'] for e in evaluations) / len(evaluations)
             avg_keyword_score = sum(e['keyword_score'] for e in evaluations) / len(evaluations)
             
@@ -250,33 +250,33 @@ class SearchQualityTester:
         return results
     
     def generate_report(self, test_results: List[Dict], stats: Dict) -> str:
-        """테스트 리포트 생성"""
+        """  """
         print("\n" + "=" * 100)
-        print("검색 품질 테스트 리포트 생성")
+        print("    ")
         print("=" * 100)
         
         report = []
         report.append("=" * 100)
-        report.append("검색 품질 테스트 리포트")
+        report.append("   ")
         report.append("=" * 100)
-        report.append(f"생성 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        report.append(f" : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         report.append("")
         
-        # 1. 데이터 상태
-        report.append("1. 데이터 상태")
+        # 1.  
+        report.append("1.  ")
         report.append("-" * 100)
-        report.append(f"총 청크: {stats['total_chunks']:,}개")
-        report.append(f"활성 청크: {stats['active_chunks']:,}개")
-        report.append(f"검색 가능 청크: {stats['searchable_chunks']:,}개")
+        report.append(f" : {stats['total_chunks']:,}")
+        report.append(f" : {stats['active_chunks']:,}")
+        report.append(f"  : {stats['searchable_chunks']:,}")
         
         if stats['searchable_chunks'] > 0:
             searchable_rate = stats['searchable_chunks'] / stats['active_chunks'] * 100
-            report.append(f"검색 가능율: {searchable_rate:.1f}%")
+            report.append(f" : {searchable_rate:.1f}%")
         
         report.append("")
         
-        # 2. 테스트 결과 요약
-        report.append("2. 테스트 결과 요약")
+        # 2.   
+        report.append("2.   ")
         report.append("-" * 100)
         
         successful_tests = [r for r in test_results if r['success']]
@@ -286,61 +286,61 @@ class SearchQualityTester:
             avg_keyword = sum(r['avg_keyword_score'] for r in successful_tests) / len(successful_tests)
             avg_top_sim = sum(r['top_similarity'] for r in successful_tests) / len(successful_tests)
             
-            report.append(f"성공한 테스트: {len(successful_tests)}/{len(test_results)}개")
-            report.append(f"평균 유사도 (상위 3개): {avg_similarity:.4f}")
-            report.append(f"평균 키워드 매칭 점수: {avg_keyword:.2f}")
-            report.append(f"최고 유사도 평균: {avg_top_sim:.4f}")
+            report.append(f" : {len(successful_tests)}/{len(test_results)}")
+            report.append(f"  ( 3): {avg_similarity:.4f}")
+            report.append(f"   : {avg_keyword:.2f}")
+            report.append(f"  : {avg_top_sim:.4f}")
         else:
-            report.append("❌ 성공한 테스트 없음")
+            report.append("   ")
         
         report.append("")
         
-        # 3. 테스트별 상세 결과
-        report.append("3. 테스트별 상세 결과")
+        # 3.   
+        report.append("3.   ")
         report.append("-" * 100)
         
         for result in test_results:
-            report.append(f"\n[테스트 {result['test_id']}] {result['query']}")
+            report.append(f"\n[ {result['test_id']}] {result['query']}")
             
             if result['success']:
-                report.append(f"  ✅ 성공: {result['results_count']}개 결과")
-                report.append(f"  평균 유사도: {result['avg_similarity']:.4f}")
-                report.append(f"  키워드 매칭: {result['avg_keyword_score']:.2f}")
-                report.append(f"  최고 유사도: {result['top_similarity']:.4f}")
+                report.append(f"   : {result['results_count']} ")
+                report.append(f"   : {result['avg_similarity']:.4f}")
+                report.append(f"   : {result['avg_keyword_score']:.2f}")
+                report.append(f"   : {result['top_similarity']:.4f}")
             else:
-                report.append(f"  ❌ 실패: 검색 결과 없음")
+                report.append(f"   :   ")
         
         report.append("")
         
-        # 4. 품질 평가
-        report.append("4. 검색 품질 평가")
+        # 4.  
+        report.append("4.   ")
         report.append("-" * 100)
         
         if successful_tests:
             if avg_similarity >= 0.7:
-                report.append("✅ 우수: 평균 유사도 0.7 이상")
+                report.append(" :   0.7 ")
             elif avg_similarity >= 0.5:
-                report.append("⚠️  양호: 평균 유사도 0.5 이상")
+                report.append("  :   0.5 ")
             else:
-                report.append("❌ 개선 필요: 평균 유사도 0.5 미만")
+                report.append("  :   0.5 ")
             
             if avg_keyword >= 0.3:
-                report.append("✅ 키워드 매칭 양호")
+                report.append("   ")
             else:
-                report.append("⚠️  키워드 매칭 개선 필요")
+                report.append("     ")
         
         report.append("")
         
-        # 5. 개선 사항
-        report.append("5. 권장 사항")
+        # 5.  
+        report.append("5.  ")
         report.append("-" * 100)
         
         if stats['searchable_chunks'] < stats['active_chunks']:
             remaining = stats['active_chunks'] - stats['searchable_chunks']
-            report.append(f"⚠️  {remaining:,}개 청크의 임베딩 생성 필요")
+            report.append(f"  {remaining:,}    ")
         
         if successful_tests and avg_similarity < 0.7:
-            report.append("⚠️  임베딩 모델 개선 또는 청크 크기 재조정 검토 필요")
+            report.append("          ")
         
         report.append("")
         report.append("=" * 100)
@@ -348,45 +348,45 @@ class SearchQualityTester:
         return "\n".join(report)
     
     def save_report(self, report: str, output_file: str = None):
-        """리포트 저장"""
+        """ """
         if output_file is None:
             output_file = "backend/data/transformed/search_quality_report.txt"
         
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(report)
         
-        print(f"\n💾 리포트 저장: {output_file}")
+        print(f"\n  : {output_file}")
     
     def run(self):
-        """테스트 실행"""
+        """ """
         print("=" * 100)
-        print("검색 품질 테스트 시작")
+        print("   ")
         print("=" * 100)
         
         try:
-            # 1. 데이터 상태 확인
+            # 1.   
             stats = self.check_data_status()
             
             if stats['searchable_chunks'] == 0:
-                print("\n❌ 검색 가능한 청크가 없습니다.")
-                print("   임베딩을 먼저 생성하세요: python backend/scripts/embedding/embed_data_remote.py")
+                print("\n    .")
+                print("     : python backend/scripts/embedding/embed_data_remote.py")
                 return 1
             
-            # 2. 테스트 쿼리 실행
+            # 2.   
             test_results = self.run_test_queries()
             
-            # 3. 리포트 생성
+            # 3.  
             report = self.generate_report(test_results, stats)
             
-            # 4. 출력 및 저장
+            # 4.   
             print("\n" + report)
             self.save_report(report)
             
-            print("\n✅ 테스트 완료!")
+            print("\n  !")
             return 0
             
         except Exception as e:
-            print(f"\n❌ 오류 발생: {e}")
+            print(f"\n  : {e}")
             import traceback
             traceback.print_exc()
             return 1
@@ -397,7 +397,7 @@ class SearchQualityTester:
                 self.conn.close()
 
 def main():
-    """메인 함수"""
+    """ """
     tester = SearchQualityTester()
     return tester.run()
 
