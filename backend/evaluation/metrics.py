@@ -1,6 +1,6 @@
 """
-똑소리 프로젝트 - RAG 평가 지표 계산 모듈
-작성일: 2026-01-05
+  - RAG    
+: 2026-01-05
 """
 
 import math
@@ -9,20 +9,20 @@ from collections import Counter
 
 
 class EvaluationMetrics:
-    """RAG 평가 지표 계산"""
+    """RAG   """
     
     @staticmethod
     def precision_at_k(retrieved: List[str], relevant: Set[str], k: int) -> float:
         """
-        Precision@K 계산
+        Precision@K 
         
         Args:
-            retrieved: 검색된 청크 ID 목록 (순서대로)
-            relevant: 관련 있는 청크 ID 집합
-            k: 상위 K개
+            retrieved:   ID  ()
+            relevant:    ID 
+            k:  K
         
         Returns:
-            Precision@K 값 (0.0 ~ 1.0)
+            Precision@K  (0.0 ~ 1.0)
         """
         if k <= 0 or not retrieved:
             return 0.0
@@ -35,15 +35,15 @@ class EvaluationMetrics:
     @staticmethod
     def recall_at_k(retrieved: List[str], relevant: Set[str], k: int) -> float:
         """
-        Recall@K 계산
+        Recall@K 
         
         Args:
-            retrieved: 검색된 청크 ID 목록 (순서대로)
-            relevant: 관련 있는 청크 ID 집합
-            k: 상위 K개
+            retrieved:   ID  ()
+            relevant:    ID 
+            k:  K
         
         Returns:
-            Recall@K 값 (0.0 ~ 1.0)
+            Recall@K  (0.0 ~ 1.0)
         """
         if not relevant or k <= 0 or not retrieved:
             return 0.0
@@ -56,15 +56,15 @@ class EvaluationMetrics:
     @staticmethod
     def f1_score_at_k(retrieved: List[str], relevant: Set[str], k: int) -> float:
         """
-        F1-Score@K 계산
+        F1-Score@K 
         
         Args:
-            retrieved: 검색된 청크 ID 목록 (순서대로)
-            relevant: 관련 있는 청크 ID 집합
-            k: 상위 K개
+            retrieved:   ID  ()
+            relevant:    ID 
+            k:  K
         
         Returns:
-            F1-Score@K 값 (0.0 ~ 1.0)
+            F1-Score@K  (0.0 ~ 1.0)
         """
         precision = EvaluationMetrics.precision_at_k(retrieved, relevant, k)
         recall = EvaluationMetrics.recall_at_k(retrieved, relevant, k)
@@ -77,14 +77,14 @@ class EvaluationMetrics:
     @staticmethod
     def average_precision(retrieved: List[str], relevant: Set[str]) -> float:
         """
-        Average Precision (AP) 계산
+        Average Precision (AP) 
         
         Args:
-            retrieved: 검색된 청크 ID 목록 (순서대로)
-            relevant: 관련 있는 청크 ID 집합
+            retrieved:   ID  ()
+            relevant:    ID 
         
         Returns:
-            AP 값 (0.0 ~ 1.0)
+            AP  (0.0 ~ 1.0)
         """
         if not relevant or not retrieved:
             return 0.0
@@ -103,20 +103,20 @@ class EvaluationMetrics:
     @staticmethod
     def mean_average_precision(all_retrieved: List[List[str]], all_relevant: List[Set[str]]) -> float:
         """
-        Mean Average Precision (MAP) 계산
+        Mean Average Precision (MAP) 
         
         Args:
-            all_retrieved: 각 질문에 대한 검색 결과 목록
-            all_relevant: 각 질문에 대한 관련 청크 집합 목록
+            all_retrieved:      
+            all_relevant:       
         
         Returns:
-            MAP 값 (0.0 ~ 1.0)
+            MAP  (0.0 ~ 1.0)
         """
         if not all_retrieved or not all_relevant:
             return 0.0
         
         if len(all_retrieved) != len(all_relevant):
-            raise ValueError("retrieved와 relevant의 길이가 다릅니다.")
+            raise ValueError("retrieved relevant  .")
         
         ap_scores = []
         for retrieved, relevant in zip(all_retrieved, all_relevant):
@@ -128,14 +128,14 @@ class EvaluationMetrics:
     @staticmethod
     def reciprocal_rank(retrieved: List[str], relevant: Set[str]) -> float:
         """
-        Reciprocal Rank (RR) 계산
+        Reciprocal Rank (RR) 
         
         Args:
-            retrieved: 검색된 청크 ID 목록 (순서대로)
-            relevant: 관련 있는 청크 ID 집합
+            retrieved:   ID  ()
+            relevant:    ID 
         
         Returns:
-            RR 값 (0.0 ~ 1.0)
+            RR  (0.0 ~ 1.0)
         """
         if not relevant or not retrieved:
             return 0.0
@@ -149,20 +149,20 @@ class EvaluationMetrics:
     @staticmethod
     def mean_reciprocal_rank(all_retrieved: List[List[str]], all_relevant: List[Set[str]]) -> float:
         """
-        Mean Reciprocal Rank (MRR) 계산
+        Mean Reciprocal Rank (MRR) 
         
         Args:
-            all_retrieved: 각 질문에 대한 검색 결과 목록
-            all_relevant: 각 질문에 대한 관련 청크 집합 목록
+            all_retrieved:      
+            all_relevant:       
         
         Returns:
-            MRR 값 (0.0 ~ 1.0)
+            MRR  (0.0 ~ 1.0)
         """
         if not all_retrieved or not all_relevant:
             return 0.0
         
         if len(all_retrieved) != len(all_relevant):
-            raise ValueError("retrieved와 relevant의 길이가 다릅니다.")
+            raise ValueError("retrieved relevant  .")
         
         rr_scores = []
         for retrieved, relevant in zip(all_retrieved, all_relevant):
@@ -174,15 +174,15 @@ class EvaluationMetrics:
     @staticmethod
     def dcg_at_k(retrieved: List[str], relevance_scores: Dict[str, int], k: int) -> float:
         """
-        Discounted Cumulative Gain@K (DCG@K) 계산
+        Discounted Cumulative Gain@K (DCG@K) 
         
         Args:
-            retrieved: 검색된 청크 ID 목록 (순서대로)
-            relevance_scores: 각 청크의 관련도 점수 (0, 1, 2)
-            k: 상위 K개
+            retrieved:   ID  ()
+            relevance_scores:     (0, 1, 2)
+            k:  K
         
         Returns:
-            DCG@K 값
+            DCG@K 
         """
         if k <= 0 or not retrieved:
             return 0.0
@@ -197,19 +197,19 @@ class EvaluationMetrics:
     @staticmethod
     def ndcg_at_k(retrieved: List[str], relevance_scores: Dict[str, int], k: int) -> float:
         """
-        Normalized Discounted Cumulative Gain@K (NDCG@K) 계산
+        Normalized Discounted Cumulative Gain@K (NDCG@K) 
         
         Args:
-            retrieved: 검색된 청크 ID 목록 (순서대로)
-            relevance_scores: 각 청크의 관련도 점수 (0, 1, 2)
-            k: 상위 K개
+            retrieved:   ID  ()
+            relevance_scores:     (0, 1, 2)
+            k:  K
         
         Returns:
-            NDCG@K 값 (0.0 ~ 1.0)
+            NDCG@K  (0.0 ~ 1.0)
         """
         dcg = EvaluationMetrics.dcg_at_k(retrieved, relevance_scores, k)
         
-        # Ideal DCG 계산 (관련도 점수 내림차순 정렬)
+        # Ideal DCG  (   )
         ideal_order = sorted(relevance_scores.items(), key=lambda x: x[1], reverse=True)
         ideal_retrieved = [chunk_id for chunk_id, _ in ideal_order]
         idcg = EvaluationMetrics.dcg_at_k(ideal_retrieved, relevance_scores, k)
@@ -225,14 +225,14 @@ class EvaluationMetrics:
         expected_doc_types: Set[str]
     ) -> float:
         """
-        Document Type Coverage 계산
+        Document Type Coverage 
         
         Args:
-            retrieved_doc_types: 검색된 문서의 유형 목록
-            expected_doc_types: 기대되는 문서 유형 집합
+            retrieved_doc_types:    
+            expected_doc_types:    
         
         Returns:
-            Coverage 값 (0.0 ~ 1.0)
+            Coverage  (0.0 ~ 1.0)
         """
         if not expected_doc_types:
             return 1.0
@@ -243,22 +243,22 @@ class EvaluationMetrics:
     @staticmethod
     def source_diversity(retrieved_sources: List[str]) -> float:
         """
-        Source Diversity 계산 (Shannon Entropy)
+        Source Diversity  (Shannon Entropy)
         
         Args:
-            retrieved_sources: 검색된 문서의 출처 목록
+            retrieved_sources:    
         
         Returns:
-            Diversity 값 (0.0 ~ log2(N), N은 고유 출처 수)
+            Diversity  (0.0 ~ log2(N), N   )
         """
         if not retrieved_sources:
             return 0.0
         
-        # 출처별 빈도 계산
+        #   
         source_counts = Counter(retrieved_sources)
         total = len(retrieved_sources)
         
-        # Shannon Entropy 계산
+        # Shannon Entropy 
         entropy = 0.0
         for count in source_counts.values():
             p = count / total
@@ -272,14 +272,14 @@ class EvaluationMetrics:
         relevant_chunk_ids: Set[str]
     ) -> float:
         """
-        Context Relevance 계산 (확장된 컨텍스트의 관련성)
+        Context Relevance  (  )
         
         Args:
-            expanded_chunk_ids: 확장된 청크 ID 목록
-            relevant_chunk_ids: 관련 있는 청크 ID 집합
+            expanded_chunk_ids:   ID 
+            relevant_chunk_ids:    ID 
         
         Returns:
-            Relevance 값 (0.0 ~ 1.0)
+            Relevance  (0.0 ~ 1.0)
         """
         if not expanded_chunk_ids:
             return 0.0
@@ -299,20 +299,20 @@ def calculate_all_metrics(
     k_values: List[int] = [1, 3, 5, 10]
 ) -> Dict:
     """
-    모든 평가 지표를 한 번에 계산
+         
     
     Args:
-        retrieved: 검색된 청크 ID 목록
-        relevant: 관련 있는 청크 ID 집합
-        highly_relevant: 매우 관련 있는 청크 ID 집합
-        expected_doc_types: 기대되는 문서 유형 집합
-        retrieved_doc_types: 검색된 문서 유형 목록
-        retrieved_sources: 검색된 문서 출처 목록
-        query_time: 검색 시간 (초)
-        k_values: 평가할 K 값 목록
+        retrieved:   ID 
+        relevant:    ID 
+        highly_relevant:     ID 
+        expected_doc_types:    
+        retrieved_doc_types:    
+        retrieved_sources:    
+        query_time:   ()
+        k_values:  K  
     
     Returns:
-        모든 지표를 포함하는 딕셔너리
+           
     """
     metrics = {}
     
@@ -326,7 +326,7 @@ def calculate_all_metrics(
     metrics['average_precision'] = EvaluationMetrics.average_precision(retrieved, relevant)
     metrics['reciprocal_rank'] = EvaluationMetrics.reciprocal_rank(retrieved, relevant)
     
-    # NDCG@K (관련도 점수: highly_relevant=2, relevant=1, 나머지=0)
+    # NDCG@K ( : highly_relevant=2, relevant=1, =0)
     relevance_scores = {}
     for chunk_id in highly_relevant:
         relevance_scores[chunk_id] = 2

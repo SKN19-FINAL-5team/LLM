@@ -1,7 +1,7 @@
 [
   {
     "test_id": 1,
-    "test_name": "전자제품 환불 (노트북 불량)",
+    "test_name": "  ( )",
     "timestamp": "2026-01-06T19:03:09.275799",
     "total_chunks": 11,
     "law_chunks": 3,
@@ -20,7 +20,7 @@
   },
   {
     "test_id": 2,
-    "test_name": "온라인 거래 분쟁 (배송 지연)",
+    "test_name": "   ( )",
     "timestamp": "2026-01-06T19:03:10.115823",
     "total_chunks": 11,
     "law_chunks": 3,
@@ -39,7 +39,7 @@
   },
   {
     "test_id": 3,
-    "test_name": "서비스 환불 (학원 수강료)",
+    "test_name": "  ( )",
     "timestamp": "2026-01-06T19:03:11.061994",
     "total_chunks": 11,
     "law_chunks": 3,
@@ -58,7 +58,7 @@
   },
   {
     "test_id": 4,
-    "test_name": "콘텐츠 분쟁 (음원 저작권)",
+    "test_name": "  ( )",
     "timestamp": "2026-01-06T19:03:11.971793",
     "total_chunks": 11,
     "law_chunks": 3,

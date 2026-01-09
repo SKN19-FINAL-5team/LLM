@@ -1,6 +1,6 @@
 """
-멀티 스테이지 RAG 검색 모듈
-3단계 계층적 검색을 통해 더 정확하고 풍부한 컨텍스트 제공
+  RAG  
+3        
 """
 
 from typing import List, Dict, Optional
@@ -10,22 +10,22 @@ from .agency_recommender import AgencyRecommender
 
 class MultiStageRetriever:
     """
-    멀티 스테이지 RAG 검색 시스템
+      RAG  
     
-    Stage 1: 법령 + 소비자분쟁기준 병렬 검색 (기반 규칙)
-    Stage 2: 분쟁조정사례 검색 (유사 사례)
-    Stage 3: 피해구제사례 검색 (Fallback)
+    Stage 1:  +    ( )
+    Stage 2:   ( )
+    Stage 3:   (Fallback)
     """
     
-    # 청크 타입 매핑 (현재 데이터베이스 스키마에 맞춤)
+    #    (   )
     CHUNK_TYPE_MAPPING = {
-        'law': ['article', 'paragraph'],  # 법령: 조문, 항
-        'criteria': ['item_classification', 'resolution_row'],  # 분쟁조정기준: 품목분류, 해결기준
-        'mediation': ['decision', 'parties_claim', 'judgment'],  # 분쟁조정사례: 결정, 당사자주장, 판단
-        'counsel': ['qa_combined']  # 피해구제사례: 질의응답
+        'law': ['article', 'paragraph'],  # : , 
+        'criteria': ['item_classification', 'resolution_row'],  # : , 
+        'mediation': ['decision', 'parties_claim', 'judgment'],  # : , , 
+        'counsel': ['qa_combined']  # : 
     }
     
-    # 문서 타입별 소스 매핑
+    #    
     DOC_TYPE_MAPPING = {
         'law': ['law'],
         'criteria': ['criteria_item', 'criteria_resolution', 'criteria_warranty', 'criteria_lifespan'],
@@ -36,8 +36,8 @@ class MultiStageRetriever:
     def __init__(self, db_config: Dict, model_name: str = None):
         """
         Args:
-            db_config: 데이터베이스 연결 설정
-            model_name: 임베딩 모델 이름
+            db_config:   
+            model_name:   
         """
         self.retriever = VectorRetriever(db_config, model_name)
         self.recommender = AgencyRecommender()
@@ -50,16 +50,16 @@ class MultiStageRetriever:
         agencies: Optional[List[str]] = None
     ) -> List[Dict]:
         """
-        특정 카테고리(법령/기준/사례)로 검색
+         (//) 
         
         Args:
-            query: 검색 쿼리
+            query:  
             category: 'law', 'criteria', 'mediation', 'counsel'
-            top_k: 반환할 최대 결과 수
-            agencies: 필터링할 기관 리스트
+            top_k:    
+            agencies:   
             
         Returns:
-            검색된 청크 리스트
+              
         """
         chunk_types = self.CHUNK_TYPE_MAPPING.get(category, [])
         if not chunk_types:
@@ -79,15 +79,15 @@ class MultiStageRetriever:
         criteria_top_k: int = 3
     ) -> Dict[str, List[Dict]]:
         """
-        Stage 1: 법령 + 분쟁조정기준 병렬 검색
+        Stage 1:  +   
         
         Args:
-            query: 사용자 질문
-            law_top_k: 법령 검색 결과 수
-            criteria_top_k: 기준 검색 결과 수
+            query:  
+            law_top_k:    
+            criteria_top_k:    
             
         Returns:
-            {'law': [...], 'criteria': [...]} 형태의 딕셔너리
+            {'law': [...], 'criteria': [...]}  
         """
         law_chunks = self._search_by_category(
             query=query,
@@ -114,38 +114,38 @@ class MultiStageRetriever:
         agencies: Optional[List[str]] = None
     ) -> List[Dict]:
         """
-        Stage 2: 분쟁조정사례 검색 (Stage 1 컨텍스트 활용)
+        Stage 2:   (Stage 1  )
         
         Args:
-            query: 사용자 질문
-            stage1_results: Stage 1 검색 결과
-            top_k: 반환할 최대 결과 수
-            agencies: 필터링할 기관 리스트
+            query:  
+            stage1_results: Stage 1  
+            top_k:    
+            agencies:   
             
         Returns:
-            검색된 분쟁조정사례 청크 리스트
+               
         """
-        # Stage 1 결과를 컨텍스트로 쿼리 확장
-        # 법령과 기준에서 핵심 키워드 추출하여 쿼리에 추가
+        # Stage 1    
+        #       
         enhanced_query = query
         
-        # 법령 텍스트에서 중요 키워드 추출 (간단한 방법: 처음 100자)
+        #      ( :  100)
         law_context = ""
         if stage1_results.get('law'):
             law_texts = [chunk['text'][:100] for chunk in stage1_results['law'][:2]]
             law_context = " ".join(law_texts)
         
-        # 기준 텍스트에서 중요 키워드 추출
+        #     
         criteria_context = ""
         if stage1_results.get('criteria'):
             criteria_texts = [chunk['text'][:100] for chunk in stage1_results['criteria'][:2]]
             criteria_context = " ".join(criteria_texts)
         
-        # 컨텍스트가 있으면 쿼리 확장 (단, 너무 길어지지 않도록 제한)
+        #     (,    )
         if law_context or criteria_context:
             enhanced_query = f"{query} {law_context} {criteria_context}"[:500]
         
-        # 분쟁조정사례 검색
+        #  
         mediation_chunks = self._search_by_category(
             query=enhanced_query,
             category='mediation',
@@ -162,15 +162,15 @@ class MultiStageRetriever:
         agencies: Optional[List[str]] = None
     ) -> List[Dict]:
         """
-        Stage 3: 피해구제사례 검색 (Fallback)
+        Stage 3:   (Fallback)
         
         Args:
-            query: 사용자 질문
-            top_k: 반환할 최대 결과 수
-            agencies: 필터링할 기관 리스트
+            query:  
+            top_k:    
+            agencies:   
             
         Returns:
-            검색된 피해구제사례 청크 리스트
+               
         """
         counsel_chunks = self._search_by_category(
             query=query,
@@ -193,17 +193,17 @@ class MultiStageRetriever:
         enable_agency_recommendation: bool = True
     ) -> Dict:
         """
-        전체 멀티 스테이지 검색 실행
+            
         
         Args:
-            query: 사용자 질문
-            law_top_k: Stage 1 법령 검색 수
-            criteria_top_k: Stage 1 기준 검색 수
-            mediation_top_k: Stage 2 분쟁조정사례 검색 수
-            counsel_top_k: Stage 3 피해구제사례 검색 수
-            mediation_threshold: 분쟁조정사례 최소 개수 (이하면 Fallback)
-            agencies: 필터링할 기관 리스트
-            enable_agency_recommendation: 기관 추천 활성화 여부
+            query:  
+            law_top_k: Stage 1   
+            criteria_top_k: Stage 1   
+            mediation_top_k: Stage 2   
+            counsel_top_k: Stage 3   
+            mediation_threshold:    ( Fallback)
+            agencies:   
+            enable_agency_recommendation:    
             
         Returns:
             {
@@ -217,19 +217,19 @@ class MultiStageRetriever:
         """
         results = {}
         
-        # Stage 1: 법령 + 기준 검색
-        print(f"[Stage 1] 법령 및 분쟁조정기준 검색 중...")
+        # Stage 1:  +  
+        print(f"[Stage 1]     ...")
         stage1_results = self.search_stage1_legal(
             query=query,
             law_top_k=law_top_k,
             criteria_top_k=criteria_top_k
         )
         results['stage1'] = stage1_results
-        print(f"  - 법령: {len(stage1_results['law'])}건")
-        print(f"  - 기준: {len(stage1_results['criteria'])}건")
+        print(f"  - : {len(stage1_results['law'])}")
+        print(f"  - : {len(stage1_results['criteria'])}")
         
-        # Stage 2: 분쟁조정사례 검색
-        print(f"[Stage 2] 분쟁조정사례 검색 중...")
+        # Stage 2:  
+        print(f"[Stage 2]   ...")
         stage2_results = self.search_stage2_mediation(
             query=query,
             stage1_results=stage1_results,
@@ -237,27 +237,27 @@ class MultiStageRetriever:
             agencies=agencies
         )
         results['stage2'] = stage2_results
-        print(f"  - 분쟁조정사례: {len(stage2_results)}건")
+        print(f"  - : {len(stage2_results)}")
         
-        # Stage 3: Fallback (분쟁조정사례가 부족한 경우)
+        # Stage 3: Fallback (  )
         used_fallback = False
         if len(stage2_results) < mediation_threshold:
-            print(f"[Stage 3] 분쟁조정사례 부족 ({len(stage2_results)}건 < {mediation_threshold}건), 피해구제사례 검색 중...")
+            print(f"[Stage 3]   ({len(stage2_results)} < {mediation_threshold}),   ...")
             stage3_results = self.search_stage3_fallback(
                 query=query,
                 top_k=counsel_top_k,
                 agencies=agencies
             )
             results['stage3'] = stage3_results
-            print(f"  - 피해구제사례: {len(stage3_results)}건")
+            print(f"  - : {len(stage3_results)}")
             used_fallback = True
         else:
             results['stage3'] = []
-            print(f"[Stage 3] 분쟁조정사례 충분, Fallback 건너뜀")
+            print(f"[Stage 3]  , Fallback ")
         
         results['used_fallback'] = used_fallback
         
-        # 모든 청크 통합
+        #   
         all_chunks = []
         all_chunks.extend(stage1_results['law'])
         all_chunks.extend(stage1_results['criteria'])
@@ -266,9 +266,9 @@ class MultiStageRetriever:
         
         results['all_chunks'] = all_chunks
         
-        # 기관 추천
+        #  
         if enable_agency_recommendation:
-            print(f"[Agency Recommendation] 기관 추천 중...")
+            print(f"[Agency Recommendation]   ...")
             recommendations = self.recommender.recommend(
                 query=query,
                 search_results=all_chunks
@@ -280,11 +280,11 @@ class MultiStageRetriever:
             }
             if recommendations:
                 top_agency_code, top_score, top_info = recommendations[0]
-                print(f"  - 추천 기관: {top_info['name']} (점수: {top_score:.2f})")
+                print(f"  -  : {top_info['name']} (: {top_score:.2f})")
         else:
             results['agency_recommendation'] = None
         
-        # 통계 정보
+        #  
         results['stats'] = {
             'total_chunks': len(all_chunks),
             'law_chunks': len(stage1_results['law']),
@@ -294,10 +294,10 @@ class MultiStageRetriever:
             'used_fallback': used_fallback
         }
         
-        print(f"\n[완료] 총 {len(all_chunks)}개 청크 검색")
+        print(f"\n[]  {len(all_chunks)}  ")
         
         return results
     
     def close(self):
-        """리소스 정리"""
+        """ """
         self.retriever.close()

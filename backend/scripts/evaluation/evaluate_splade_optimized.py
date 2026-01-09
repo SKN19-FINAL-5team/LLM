@@ -1,6 +1,6 @@
 """
-SPLADE 최적화 버전 성능 평가 스크립트
-기존 방식 vs 최적화 방식 비교 평가
+SPLADE     
+  vs    
 """
 
 import json
@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from pathlib import Path
 
-# 프로젝트 루트 경로 추가
+#    
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from app.rag.multi_stage_retriever_v2 import MultiStageRetrieverV2
@@ -21,7 +21,7 @@ from scripts.splade.test_splade_naver import NaverSPLADEDBRetriever
 from scripts.splade.test_splade_remote import RemoteSPLADEDBRetriever
 from scripts.splade.test_splade_optimized import OptimizedSPLADEDBRetriever
 
-# 환경 변수 로드
+#   
 backend_dir = Path(__file__).parent.parent.parent
 env_file = backend_dir / '.env'
 if env_file.exists():
@@ -41,7 +41,7 @@ def evaluate_law_tests(
     optimized_splade_retriever: Optional[OptimizedSPLADEDBRetriever],
     test_cases: List[Dict]
 ) -> Dict:
-    """법령 테스트 평가"""
+    """  """
     results = {
         'dense': {'success': 0, 'total': 0, 'details': [], 'latency': []},
         'sparse': {'success': 0, 'total': 0, 'details': [], 'latency': []},
@@ -55,7 +55,7 @@ def evaluate_law_tests(
         expected_articles = test.get('expected_articles', [])
         expected_law = test.get('expected_law')
         
-        # Dense 검색
+        # Dense 
         try:
             start_time = time.time()
             dense_results = dense_retriever.search(query, top_k=5, debug=False)
@@ -95,11 +95,11 @@ def evaluate_law_tests(
                         dense_success = True
                         break
         except Exception as e:
-            print(f"  ⚠️  Dense 검색 오류: {e}")
+            print(f"    Dense  : {e}")
             dense_success = False
             dense_latency = 0.0
         
-        # Sparse 검색
+        # Sparse 
         try:
             start_time = time.time()
             sparse_results = sparse_retriever.search_law_bm25(query, top_k=5)
@@ -137,11 +137,11 @@ def evaluate_law_tests(
                         sparse_success = True
                         break
         except Exception as e:
-            print(f"  ⚠️  Sparse 검색 오류: {e}")
+            print(f"    Sparse  : {e}")
             sparse_success = False
             sparse_latency = 0.0
         
-        # SPLADE (기존 방식)
+        # SPLADE ( )
         splade_old_success = False
         splade_old_latency = 0.0
         if old_splade_retriever:
@@ -181,11 +181,11 @@ def evaluate_law_tests(
                             splade_old_success = True
                             break
             except Exception as e:
-                print(f"  ⚠️  SPLADE (기존) 검색 오류: {e}")
+                print(f"    SPLADE ()  : {e}")
                 splade_old_success = False
                 splade_old_latency = 0.0
         
-        # SPLADE (최적화 방식)
+        # SPLADE ( )
         splade_opt_success = False
         splade_opt_latency = 0.0
         if optimized_splade_retriever:
@@ -225,11 +225,11 @@ def evaluate_law_tests(
                             splade_opt_success = True
                             break
             except Exception as e:
-                print(f"  ⚠️  SPLADE (최적화) 검색 오류: {e}")
+                print(f"    SPLADE ()  : {e}")
                 splade_opt_success = False
                 splade_opt_latency = 0.0
         
-        # 결과 기록
+        #  
         results['dense']['total'] += 1
         results['sparse']['total'] += 1
         if dense_success:
@@ -251,7 +251,7 @@ def evaluate_law_tests(
                 results['splade_optimized']['success'] += 1
             results['splade_optimized']['latency'].append(splade_opt_latency)
         
-        # 상세 결과
+        #  
         results['dense']['details'].append({
             'test_id': test['id'],
             'query': query,
@@ -279,15 +279,15 @@ def evaluate_law_tests(
                 'latency': splade_opt_latency
             })
         
-        # 출력
+        # 
         print(f"\n[{test['id']}] {test['category']}")
         print(f"Query: {query}")
-        print(f"Dense: {'✅' if dense_success else '❌'} ({dense_latency*1000:.1f}ms)")
-        print(f"Sparse: {'✅' if sparse_success else '❌'} ({sparse_latency*1000:.1f}ms)")
+        print(f"Dense: {'' if dense_success else ''} ({dense_latency*1000:.1f}ms)")
+        print(f"Sparse: {'' if sparse_success else ''} ({sparse_latency*1000:.1f}ms)")
         if old_splade_retriever:
-            print(f"SPLADE (기존): {'✅' if splade_old_success else '❌'} ({splade_old_latency*1000:.1f}ms)")
+            print(f"SPLADE (): {'' if splade_old_success else ''} ({splade_old_latency*1000:.1f}ms)")
         if optimized_splade_retriever:
-            print(f"SPLADE (최적화): {'✅' if splade_opt_success else '❌'} ({splade_opt_latency*1000:.1f}ms)")
+            print(f"SPLADE (): {'' if splade_opt_success else ''} ({splade_opt_latency*1000:.1f}ms)")
     
     return results
 
@@ -299,7 +299,7 @@ def evaluate_criteria_tests(
     optimized_splade_retriever: Optional[OptimizedSPLADEDBRetriever],
     test_cases: List[Dict]
 ) -> Dict:
-    """기준 테스트 평가"""
+    """  """
     results = {
         'dense': {'success': 0, 'total': 0, 'details': [], 'latency': []},
         'sparse': {'success': 0, 'total': 0, 'details': [], 'latency': []},
@@ -313,7 +313,7 @@ def evaluate_criteria_tests(
         expected_category = test.get('expected_category')
         not_expected = test.get('not_expected')
         
-        # Dense 검색
+        # Dense 
         try:
             start_time = time.time()
             dense_results = dense_retriever.search(query, top_k=5, debug=False)
@@ -336,11 +336,11 @@ def evaluate_criteria_tests(
                         dense_success = True
                         break
         except Exception as e:
-            print(f"  ⚠️  Dense 검색 오류: {e}")
+            print(f"    Dense  : {e}")
             dense_success = False
             dense_latency = 0.0
         
-        # Sparse 검색
+        # Sparse 
         try:
             start_time = time.time()
             sparse_results = sparse_retriever.search_criteria_bm25(query, top_k=5)
@@ -363,11 +363,11 @@ def evaluate_criteria_tests(
                         sparse_success = True
                         break
         except Exception as e:
-            print(f"  ⚠️  Sparse 검색 오류: {e}")
+            print(f"    Sparse  : {e}")
             sparse_success = False
             sparse_latency = 0.0
         
-        # SPLADE (기존 방식)
+        # SPLADE ( )
         splade_old_success = False
         splade_old_latency = 0.0
         if old_splade_retriever:
@@ -392,11 +392,11 @@ def evaluate_criteria_tests(
                             splade_old_success = True
                             break
             except Exception as e:
-                print(f"  ⚠️  SPLADE (기존) 검색 오류: {e}")
+                print(f"    SPLADE ()  : {e}")
                 splade_old_success = False
                 splade_old_latency = 0.0
         
-        # SPLADE (최적화 방식)
+        # SPLADE ( )
         splade_opt_success = False
         splade_opt_latency = 0.0
         if optimized_splade_retriever:
@@ -421,11 +421,11 @@ def evaluate_criteria_tests(
                             splade_opt_success = True
                             break
             except Exception as e:
-                print(f"  ⚠️  SPLADE (최적화) 검색 오류: {e}")
+                print(f"    SPLADE ()  : {e}")
                 splade_opt_success = False
                 splade_opt_latency = 0.0
         
-        # 결과 기록
+        #  
         results['dense']['total'] += 1
         results['sparse']['total'] += 1
         if dense_success:
@@ -447,7 +447,7 @@ def evaluate_criteria_tests(
                 results['splade_optimized']['success'] += 1
             results['splade_optimized']['latency'].append(splade_opt_latency)
         
-        # 상세 결과
+        #  
         results['dense']['details'].append({
             'test_id': test['id'],
             'query': query,
@@ -475,21 +475,21 @@ def evaluate_criteria_tests(
                 'latency': splade_opt_latency
             })
         
-        # 출력
+        # 
         print(f"\n[{test['id']}] {test['category']}")
         print(f"Query: {query}")
-        print(f"Dense: {'✅' if dense_success else '❌'} ({dense_latency*1000:.1f}ms)")
-        print(f"Sparse: {'✅' if sparse_success else '❌'} ({sparse_latency*1000:.1f}ms)")
+        print(f"Dense: {'' if dense_success else ''} ({dense_latency*1000:.1f}ms)")
+        print(f"Sparse: {'' if sparse_success else ''} ({sparse_latency*1000:.1f}ms)")
         if old_splade_retriever:
-            print(f"SPLADE (기존): {'✅' if splade_old_success else '❌'} ({splade_old_latency*1000:.1f}ms)")
+            print(f"SPLADE (): {'' if splade_old_success else ''} ({splade_old_latency*1000:.1f}ms)")
         if optimized_splade_retriever:
-            print(f"SPLADE (최적화): {'✅' if splade_opt_success else '❌'} ({splade_opt_latency*1000:.1f}ms)")
+            print(f"SPLADE (): {'' if splade_opt_success else ''} ({splade_opt_latency*1000:.1f}ms)")
     
     return results
 
 
 def calculate_metrics(results: Dict) -> Dict:
-    """평가 지표 계산"""
+    """  """
     metrics = {}
     
     for method, data in results.items():
@@ -514,10 +514,10 @@ def calculate_metrics(results: Dict) -> Dict:
 
 
 def main():
-    """메인 함수"""
+    """ """
     load_dotenv()
     
-    # DB 설정
+    # DB 
     db_config = {
         'host': os.getenv('DB_HOST', 'localhost'),
         'port': int(os.getenv('DB_PORT', 5432)),
@@ -526,31 +526,31 @@ def main():
         'password': os.getenv('DB_PASSWORD', 'postgres')
     }
     
-    # Retriever 초기화
-    print("🔧 Retriever 초기화 중...")
+    # Retriever 
+    print(" Retriever  ...")
     dense_retriever = MultiStageRetrieverV2(db_config)
     sparse_retriever = BM25SparseRetriever(db_config)
     
-    # SPLADE Retriever 초기화 (기존 방식)
+    # SPLADE Retriever  ( )
     old_splade_retriever = None
     try:
         import torch
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         old_splade_retriever = NaverSPLADEDBRetriever(db_config, device=device)
         old_splade_retriever.splade_retriever.load_model()
-        print("✅ SPLADE (기존 방식) 초기화 완료")
+        print(" SPLADE ( )  ")
     except Exception as e:
-        print(f"⚠️  SPLADE (기존 방식) 초기화 실패: {e}")
+        print(f"  SPLADE ( )  : {e}")
     
-    # SPLADE Retriever 초기화 (최적화 방식)
+    # SPLADE Retriever  ( )
     optimized_splade_retriever = None
     try:
         optimized_splade_retriever = OptimizedSPLADEDBRetriever(db_config)
-        print("✅ SPLADE (최적화 방식) 초기화 완료")
+        print(" SPLADE ( )  ")
     except Exception as e:
-        print(f"⚠️  SPLADE (최적화 방식) 초기화 실패: {e}")
+        print(f"  SPLADE ( )  : {e}")
     
-    # 테스트 케이스 로드
+    #   
     script_dir = os.path.dirname(os.path.abspath(__file__))
     law_test_file = os.path.join(script_dir, 'test_cases_splade_law.json')
     criteria_test_file = os.path.join(script_dir, 'test_cases_splade_criteria.json')
@@ -562,49 +562,49 @@ def main():
         criteria_tests = json.load(f)
     
     print("\n" + "=" * 80)
-    print("SPLADE 최적화 성능 평가")
+    print("SPLADE   ")
     print("=" * 80)
     
-    # 법령 테스트
-    print("\n\n=== 법령 검색 평가 ===")
+    #  
+    print("\n\n===    ===")
     law_results = evaluate_law_tests(
         dense_retriever, sparse_retriever,
         old_splade_retriever, optimized_splade_retriever,
         law_tests
     )
     
-    # 기준 테스트
-    print("\n\n=== 기준 검색 평가 ===")
+    #  
+    print("\n\n===    ===")
     criteria_results = evaluate_criteria_tests(
         dense_retriever, sparse_retriever,
         old_splade_retriever, optimized_splade_retriever,
         criteria_tests
     )
     
-    # 지표 계산
+    #  
     law_metrics = calculate_metrics(law_results)
     criteria_metrics = calculate_metrics(criteria_results)
     
-    # 결과 출력
+    #  
     print("\n\n" + "=" * 80)
-    print("최종 결과")
+    print(" ")
     print("=" * 80)
     
-    print("\n법령 검색:")
+    print("\n :")
     for method in ['dense', 'sparse', 'splade_old', 'splade_optimized']:
         if method in law_metrics:
             m = law_metrics[method]
             print(f"  {method.upper()}: {m['success']}/{m['total']} ({m['success_rate']:.1f}%) | "
-                  f"평균 지연시간: {m['avg_latency_ms']:.1f}ms")
+                  f" : {m['avg_latency_ms']:.1f}ms")
     
-    print("\n기준 검색:")
+    print("\n :")
     for method in ['dense', 'sparse', 'splade_old', 'splade_optimized']:
         if method in criteria_metrics:
             m = criteria_metrics[method]
             print(f"  {method.upper()}: {m['success']}/{m['total']} ({m['success_rate']:.1f}%) | "
-                  f"평균 지연시간: {m['avg_latency_ms']:.1f}ms")
+                  f" : {m['avg_latency_ms']:.1f}ms")
     
-    # 성능 개선 분석
+    #   
     if 'splade_old' in law_metrics and 'splade_optimized' in law_metrics:
         old_metrics = law_metrics['splade_old']
         opt_metrics = law_metrics['splade_optimized']
@@ -613,12 +613,12 @@ def main():
         accuracy_improvement = opt_metrics['success_rate'] - old_metrics['success_rate']
         
         print("\n" + "=" * 80)
-        print("성능 개선 분석 (법령 검색)")
+        print("   ( )")
         print("=" * 80)
-        print(f"속도 개선: {speedup:.2f}배 (기존: {old_metrics['avg_latency_ms']:.1f}ms → 최적화: {opt_metrics['avg_latency_ms']:.1f}ms)")
-        print(f"정확도 개선: {accuracy_improvement:+.1f}% (기존: {old_metrics['success_rate']:.1f}% → 최적화: {opt_metrics['success_rate']:.1f}%)")
+        print(f" : {speedup:.2f} (: {old_metrics['avg_latency_ms']:.1f}ms → : {opt_metrics['avg_latency_ms']:.1f}ms)")
+        print(f" : {accuracy_improvement:+.1f}% (: {old_metrics['success_rate']:.1f}% → : {opt_metrics['success_rate']:.1f}%)")
     
-    # 결과 저장
+    #  
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     results_file = os.path.join(script_dir, f'splade_optimized_results_{timestamp}.json')
     
@@ -633,9 +633,9 @@ def main():
     with open(results_file, 'w', encoding='utf-8') as f:
         json.dump(results_summary, f, ensure_ascii=False, indent=2)
     
-    print(f"\n✅ 결과 저장: {results_file}")
+    print(f"\n  : {results_file}")
     
-    # 리소스 정리
+    #  
     dense_retriever.close()
     if old_splade_retriever and old_splade_retriever.conn:
         old_splade_retriever.conn.close()

@@ -75,61 +75,61 @@
       "details": [
         {
           "test_id": "law_001",
-          "query": "민법 제750조",
+          "query": " 750",
           "success": true,
           "latency": 5.1986424922943115
         },
         {
           "test_id": "law_002",
-          "query": "민법 제750조 불법행위",
+          "query": " 750 ",
           "success": true,
           "latency": 0.2034008502960205
         },
         {
           "test_id": "law_003",
-          "query": "제750조 불법행위 손해배상",
+          "query": "750  ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_004",
-          "query": "소비자기본법",
+          "query": "",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_005",
-          "query": "전자상거래법 청약철회",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_006",
-          "query": "불법행위 책임",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_007",
-          "query": "손해배상 청구",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_008",
-          "query": "약관규제법 부당약관",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_009",
-          "query": "상법 제105조",
+          "query": " 105",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_010",
-          "query": "온라인 쇼핑몰에서 구매한 제품 환불 관련 법령",
+          "query": "      ",
           "success": false,
           "latency": 0.0
         }
@@ -153,61 +153,61 @@
       "details": [
         {
           "test_id": "law_001",
-          "query": "민법 제750조",
+          "query": " 750",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_002",
-          "query": "민법 제750조 불법행위",
+          "query": " 750 ",
           "success": false,
           "latency": 0.027593612670898438
         },
         {
           "test_id": "law_003",
-          "query": "제750조 불법행위 손해배상",
+          "query": "750  ",
           "success": false,
           "latency": 0.027692079544067383
         },
         {
           "test_id": "law_004",
-          "query": "소비자기본법",
+          "query": "",
           "success": false,
           "latency": 0.02757740020751953
         },
         {
           "test_id": "law_005",
-          "query": "전자상거래법 청약철회",
+          "query": " ",
           "success": false,
           "latency": 0.027922391891479492
         },
         {
           "test_id": "law_006",
-          "query": "불법행위 책임",
+          "query": " ",
           "success": false,
           "latency": 0.028057336807250977
         },
         {
           "test_id": "law_007",
-          "query": "손해배상 청구",
+          "query": " ",
           "success": false,
           "latency": 0.027980804443359375
         },
         {
           "test_id": "law_008",
-          "query": "약관규제법 부당약관",
+          "query": " ",
           "success": false,
           "latency": 0.027567625045776367
         },
         {
           "test_id": "law_009",
-          "query": "상법 제105조",
+          "query": " 105",
           "success": false,
           "latency": 0.028338909149169922
         },
         {
           "test_id": "law_010",
-          "query": "온라인 쇼핑몰에서 구매한 제품 환불 관련 법령",
+          "query": "      ",
           "success": false,
           "latency": 0.02745842933654785
         }
@@ -231,61 +231,61 @@
       "details": [
         {
           "test_id": "law_001",
-          "query": "민법 제750조",
+          "query": " 750",
           "success": false,
           "latency": 18.42774796485901
         },
         {
           "test_id": "law_002",
-          "query": "민법 제750조 불법행위",
+          "query": " 750 ",
           "success": false,
           "latency": 20.023061513900757
         },
         {
           "test_id": "law_003",
-          "query": "제750조 불법행위 손해배상",
+          "query": "750  ",
           "success": false,
           "latency": 17.696108102798462
         },
         {
           "test_id": "law_004",
-          "query": "소비자기본법",
+          "query": "",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_005",
-          "query": "전자상거래법 청약철회",
+          "query": " ",
           "success": false,
           "latency": 20.045178174972534
         },
         {
           "test_id": "law_006",
-          "query": "불법행위 책임",
+          "query": " ",
           "success": false,
           "latency": 17.69844913482666
         },
         {
           "test_id": "law_007",
-          "query": "손해배상 청구",
+          "query": " ",
           "success": false,
           "latency": 17.80678105354309
         },
         {
           "test_id": "law_008",
-          "query": "약관규제법 부당약관",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "law_009",
-          "query": "상법 제105조",
+          "query": " 105",
           "success": false,
           "latency": 19.98057723045349
         },
         {
           "test_id": "law_010",
-          "query": "온라인 쇼핑몰에서 구매한 제품 환불 관련 법령",
+          "query": "      ",
           "success": false,
           "latency": 17.65224003791809
         }
@@ -309,61 +309,61 @@
       "details": [
         {
           "test_id": "law_001",
-          "query": "민법 제750조",
+          "query": " 750",
           "success": false,
           "latency": 0.4172999858856201
         },
         {
           "test_id": "law_002",
-          "query": "민법 제750조 불법행위",
+          "query": " 750 ",
           "success": false,
           "latency": 0.36486005783081055
         },
         {
           "test_id": "law_003",
-          "query": "제750조 불법행위 손해배상",
+          "query": "750  ",
           "success": false,
           "latency": 0.36272716522216797
         },
         {
           "test_id": "law_004",
-          "query": "소비자기본법",
+          "query": "",
           "success": false,
           "latency": 0.3655076026916504
         },
         {
           "test_id": "law_005",
-          "query": "전자상거래법 청약철회",
+          "query": " ",
           "success": false,
           "latency": 0.3609046936035156
         },
         {
           "test_id": "law_006",
-          "query": "불법행위 책임",
+          "query": " ",
           "success": false,
           "latency": 0.3559226989746094
         },
         {
           "test_id": "law_007",
-          "query": "손해배상 청구",
+          "query": " ",
           "success": false,
           "latency": 0.36179447174072266
         },
         {
           "test_id": "law_008",
-          "query": "약관규제법 부당약관",
+          "query": " ",
           "success": false,
           "latency": 0.3552873134613037
         },
         {
           "test_id": "law_009",
-          "query": "상법 제105조",
+          "query": " 105",
           "success": false,
           "latency": 0.36270928382873535
         },
         {
           "test_id": "law_010",
-          "query": "온라인 쇼핑몰에서 구매한 제품 환불 관련 법령",
+          "query": "      ",
           "success": false,
           "latency": 0.3565177917480469
         }
@@ -389,91 +389,91 @@
       "details": [
         {
           "test_id": "criteria_001",
-          "query": "냉장고",
+          "query": "",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_002",
-          "query": "냉장고 품질보증",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_003",
-          "query": "세탁기 보증기간",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_004",
-          "query": "TV 텔레비전",
+          "query": "TV ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_005",
-          "query": "환불",
+          "query": "",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_006",
-          "query": "환불 반품 취소",
+          "query": "  ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_007",
-          "query": "냉장고 환불",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_008",
-          "query": "보증기간",
+          "query": "",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_009",
-          "query": "무상수리",
+          "query": "",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_010",
-          "query": "가전제품 냉장고",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_011",
-          "query": "품질불량",
+          "query": "",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_012",
-          "query": "온라인으로 구매한 냉장고가 고장났는데 환불 받을 수 있나요",
+          "query": "       ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_013",
-          "query": "스마트폰 휴대폰",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_014",
-          "query": "에어컨 수리",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_015",
-          "query": "내용연수",
+          "query": "",
           "success": false,
           "latency": 0.0
         }
@@ -502,91 +502,91 @@
       "details": [
         {
           "test_id": "criteria_001",
-          "query": "냉장고",
+          "query": "",
           "success": false,
           "latency": 0.009707212448120117
         },
         {
           "test_id": "criteria_002",
-          "query": "냉장고 품질보증",
+          "query": " ",
           "success": false,
           "latency": 0.00855255126953125
         },
         {
           "test_id": "criteria_003",
-          "query": "세탁기 보증기간",
+          "query": " ",
           "success": false,
           "latency": 0.00827789306640625
         },
         {
           "test_id": "criteria_004",
-          "query": "TV 텔레비전",
+          "query": "TV ",
           "success": false,
           "latency": 0.00833892822265625
         },
         {
           "test_id": "criteria_005",
-          "query": "환불",
+          "query": "",
           "success": false,
           "latency": 0.008392810821533203
         },
         {
           "test_id": "criteria_006",
-          "query": "환불 반품 취소",
+          "query": "  ",
           "success": false,
           "latency": 0.008347272872924805
         },
         {
           "test_id": "criteria_007",
-          "query": "냉장고 환불",
+          "query": " ",
           "success": false,
           "latency": 0.008161783218383789
         },
         {
           "test_id": "criteria_008",
-          "query": "보증기간",
+          "query": "",
           "success": false,
           "latency": 0.008225202560424805
         },
         {
           "test_id": "criteria_009",
-          "query": "무상수리",
+          "query": "",
           "success": false,
           "latency": 0.00892329216003418
         },
         {
           "test_id": "criteria_010",
-          "query": "가전제품 냉장고",
+          "query": " ",
           "success": false,
           "latency": 0.008723974227905273
         },
         {
           "test_id": "criteria_011",
-          "query": "품질불량",
+          "query": "",
           "success": false,
           "latency": 0.008395195007324219
         },
         {
           "test_id": "criteria_012",
-          "query": "온라인으로 구매한 냉장고가 고장났는데 환불 받을 수 있나요",
+          "query": "       ",
           "success": false,
           "latency": 0.008510112762451172
         },
         {
           "test_id": "criteria_013",
-          "query": "스마트폰 휴대폰",
+          "query": " ",
           "success": false,
           "latency": 0.008199214935302734
         },
         {
           "test_id": "criteria_014",
-          "query": "에어컨 수리",
+          "query": " ",
           "success": false,
           "latency": 0.00829172134399414
         },
         {
           "test_id": "criteria_015",
-          "query": "내용연수",
+          "query": "",
           "success": false,
           "latency": 0.008363485336303711
         }
@@ -615,91 +615,91 @@
       "details": [
         {
           "test_id": "criteria_001",
-          "query": "냉장고",
+          "query": "",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_002",
-          "query": "냉장고 품질보증",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_003",
-          "query": "세탁기 보증기간",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_004",
-          "query": "TV 텔레비전",
+          "query": "TV ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_005",
-          "query": "환불",
+          "query": "",
           "success": false,
           "latency": 2.8934433460235596
         },
         {
           "test_id": "criteria_006",
-          "query": "환불 반품 취소",
+          "query": "  ",
           "success": false,
           "latency": 0.577599048614502
         },
         {
           "test_id": "criteria_007",
-          "query": "냉장고 환불",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_008",
-          "query": "보증기간",
+          "query": "",
           "success": false,
           "latency": 2.910334825515747
         },
         {
           "test_id": "criteria_009",
-          "query": "무상수리",
+          "query": "",
           "success": false,
           "latency": 2.9007673263549805
         },
         {
           "test_id": "criteria_010",
-          "query": "가전제품 냉장고",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_011",
-          "query": "품질불량",
+          "query": "",
           "success": false,
           "latency": 2.9023706912994385
         },
         {
           "test_id": "criteria_012",
-          "query": "온라인으로 구매한 냉장고가 고장났는데 환불 받을 수 있나요",
+          "query": "       ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_013",
-          "query": "스마트폰 휴대폰",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_014",
-          "query": "에어컨 수리",
+          "query": " ",
           "success": false,
           "latency": 0.0
         },
         {
           "test_id": "criteria_015",
-          "query": "내용연수",
+          "query": "",
           "success": false,
           "latency": 2.9080309867858887
         }
@@ -728,91 +728,91 @@
       "details": [
         {
           "test_id": "criteria_001",
-          "query": "냉장고",
+          "query": "",
           "success": false,
           "latency": 0.0695650577545166
         },
         {
           "test_id": "criteria_002",
-          "query": "냉장고 품질보증",
+          "query": " ",
           "success": false,
           "latency": 0.06716513633728027
         },
         {
           "test_id": "criteria_003",
-          "query": "세탁기 보증기간",
+          "query": " ",
           "success": false,
           "latency": 0.06734895706176758
         },
         {
           "test_id": "criteria_004",
-          "query": "TV 텔레비전",
+          "query": "TV ",
           "success": false,
           "latency": 0.0695955753326416
         },
         {
           "test_id": "criteria_005",
-          "query": "환불",
+          "query": "",
           "success": false,
           "latency": 0.06778502464294434
         },
         {
           "test_id": "criteria_006",
-          "query": "환불 반품 취소",
+          "query": "  ",
           "success": false,
           "latency": 0.06797051429748535
         },
         {
           "test_id": "criteria_007",
-          "query": "냉장고 환불",
+          "query": " ",
           "success": false,
           "latency": 0.06567549705505371
         },
         {
           "test_id": "criteria_008",
-          "query": "보증기간",
+          "query": "",
           "success": false,
           "latency": 0.06895852088928223
         },
         {
           "test_id": "criteria_009",
-          "query": "무상수리",
+          "query": "",
           "success": false,
           "latency": 0.06599926948547363
         },
         {
           "test_id": "criteria_010",
-          "query": "가전제품 냉장고",
+          "query": " ",
           "success": false,
           "latency": 0.0670011043548584
         },
         {
           "test_id": "criteria_011",
-          "query": "품질불량",
+          "query": "",
           "success": false,
           "latency": 0.0654137134552002
         },
         {
           "test_id": "criteria_012",
-          "query": "온라인으로 구매한 냉장고가 고장났는데 환불 받을 수 있나요",
+          "query": "       ",
           "success": false,
           "latency": 0.06810283660888672
         },
         {
           "test_id": "criteria_013",
-          "query": "스마트폰 휴대폰",
+          "query": " ",
           "success": false,
           "latency": 0.06716322898864746
         },
         {
           "test_id": "criteria_014",
-          "query": "에어컨 수리",
+          "query": " ",
           "success": false,
           "latency": 0.06582880020141602
         },
         {
           "test_id": "criteria_015",
-          "query": "내용연수",
+          "query": "",
           "success": false,
           "latency": 0.06660270690917969
         }

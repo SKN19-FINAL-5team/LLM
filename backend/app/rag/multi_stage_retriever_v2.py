@@ -1,6 +1,6 @@
 """
 Multi-Stage RAG Retriever V2 (Hybrid Version)
-하이브리드 검색기를 사용한 개선된 멀티 스테이지 검색 시스템
+       
 """
 
 from typing import List, Dict, Optional
@@ -11,20 +11,20 @@ from .query_analyzer import QueryAnalyzer, QueryType
 
 class MultiStageRetrieverV2:
     """
-    하이브리드 검색 기반 멀티 스테이지 RAG 시스템
+         RAG 
     
-    개선 사항:
-    - 질문 유형별 최적화된 검색 전략
-    - 데이터 타입별 전문 검색기 활용
-    - 메타데이터 기반 재랭킹
-    - 중요도 및 최신성 고려
+     :
+    -     
+    -     
+    -   
+    -    
     """
     
     def __init__(self, db_config: Dict, model_name: str = None):
         """
         Args:
-            db_config: 데이터베이스 연결 설정
-            model_name: 임베딩 모델 이름
+            db_config:   
+            model_name:   
         """
         self.hybrid_retriever = HybridRetriever(db_config, model_name)
         self.query_analyzer = QueryAnalyzer()
@@ -40,28 +40,28 @@ class MultiStageRetrieverV2:
         debug: bool = False
     ) -> Dict:
         """
-        통합 검색 (단일 단계, 하이브리드)
+          ( , )
         
         Args:
-            query: 사용자 질문
-            top_k: 반환할 최대 결과 수
-            enable_agency_recommendation: 기관 추천 활성화 여부
-            min_score: 최소 점수 임계값
-            debug: 디버깅 로그 출력 여부
+            query:  
+            top_k:    
+            enable_agency_recommendation:    
+            min_score:   
+            debug:    
         
         Returns:
-            검색 결과 및 메타 정보
+                
         """
-        # 1. 쿼리 분석
+        # 1.  
         query_analysis = self.query_analyzer.analyze(query)
         
-        # 2. 기관 추천 (분쟁조정기관)
+        # 2.   ()
         recommended_agencies = None
         if enable_agency_recommendation:
             recommendations = self.recommender.recommend(query, top_n=2)
             recommended_agencies = [rec[0] for rec in recommendations]  # agency codes
         
-        # 3. 하이브리드 검색 실행
+        # 3.   
         results = self.hybrid_retriever.search(
             query=query,
             top_k=top_k,
@@ -71,7 +71,7 @@ class MultiStageRetrieverV2:
             debug=debug
         )
         
-        # 4. 결과 구성
+        # 4.  
         return {
             'query': query,
             'query_type': query_analysis.query_type.value,
@@ -95,24 +95,24 @@ class MultiStageRetrieverV2:
         enable_agency_recommendation: bool = True
     ) -> Dict:
         """
-        멀티 스테이지 검색 (단계별 분리)
+           ( )
         
-        기존 호환성을 위한 인터페이스
+           
         
         Args:
-            query: 사용자 질문
-            law_top_k: 법령 검색 결과 수
-            criteria_top_k: 기준 검색 결과 수
-            case_top_k: 사례 검색 결과 수
-            enable_agency_recommendation: 기관 추천 활성화 여부
+            query:  
+            law_top_k:    
+            criteria_top_k:    
+            case_top_k:    
+            enable_agency_recommendation:    
         
         Returns:
-            단계별 검색 결과
+              
         """
-        # 쿼리 분석
+        #  
         query_analysis = self.query_analyzer.analyze(query)
         
-        # 기관 추천
+        #  
         recommended_agencies = None
         agency_info = {}
         if enable_agency_recommendation:
@@ -125,10 +125,10 @@ class MultiStageRetrieverV2:
                 ]
             }
         
-        # 쿼리 임베딩
+        #  
         query_embedding = self.hybrid_retriever.embed_query(query)
         
-        # Stage 1: 법령 검색
+        # Stage 1:  
         law_results = []
         if law_top_k > 0:
             law_results = self.hybrid_retriever.law_retriever.search(
@@ -138,7 +138,7 @@ class MultiStageRetrieverV2:
                 top_k=law_top_k
             )
         
-        # Stage 2: 기준 검색
+        # Stage 2:  
         criteria_results = []
         if criteria_top_k > 0:
             criteria_results = self.hybrid_retriever.criteria_retriever.search(
@@ -148,7 +148,7 @@ class MultiStageRetrieverV2:
                 top_k=criteria_top_k
             )
         
-        # Stage 3: 사례 검색
+        # Stage 3:  
         case_results = []
         if case_top_k > 0:
             case_results = self.hybrid_retriever.case_retriever.search(
@@ -159,7 +159,7 @@ class MultiStageRetrieverV2:
                 top_k=case_top_k
             )
         
-        # 재랭킹
+        # 
         unified_results = self.hybrid_retriever.reranker.rerank(
             law_results=law_results,
             criteria_results=criteria_results,
@@ -168,7 +168,7 @@ class MultiStageRetrieverV2:
             query=query
         )
         
-        # 결과 구성
+        #  
         return {
             'query': query,
             'query_type': query_analysis.query_type.value,
@@ -190,7 +190,7 @@ class MultiStageRetrieverV2:
         }
     
     def _format_results(self, results: List) -> List[Dict]:
-        """통합 검색 결과 포맷팅"""
+        """   """
         formatted = []
         for r in results:
             formatted.append({
@@ -210,7 +210,7 @@ class MultiStageRetrieverV2:
         return formatted
     
     def _format_law_results(self, results: List) -> List[Dict]:
-        """법령 검색 결과 포맷팅"""
+        """   """
         formatted = []
         for r in results:
             formatted.append({
@@ -229,7 +229,7 @@ class MultiStageRetrieverV2:
         return formatted
     
     def _format_criteria_results(self, results: List) -> List[Dict]:
-        """기준 검색 결과 포맷팅"""
+        """   """
         formatted = []
         for r in results:
             formatted.append({
@@ -249,7 +249,7 @@ class MultiStageRetrieverV2:
         return formatted
     
     def _format_case_results(self, results: List) -> List[Dict]:
-        """사례 검색 결과 포맷팅"""
+        """   """
         formatted = []
         for r in results:
             formatted.append({
@@ -270,11 +270,11 @@ class MultiStageRetrieverV2:
         return formatted
     
     def close(self):
-        """리소스 정리"""
+        """ """
         self.hybrid_retriever.close()
 
 
-# 편의 함수
+#  
 def create_multi_stage_retriever_v2(db_config: Dict) -> MultiStageRetrieverV2:
-    """멀티 스테이지 검색기 V2 생성"""
+    """   V2 """
     return MultiStageRetrieverV2(db_config)
