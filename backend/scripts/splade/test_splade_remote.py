@@ -1,6 +1,6 @@
 """
 로컬에서 RunPod의 SPLADE API 서버를 사용하는 클라이언트
-SSH 터널을 통해 접근 (localhost:8001 -> RunPod:8000)
+SSH 터널을 통해 접근 (localhost:8002 -> RunPod:8000)
 """
 
 import requests
@@ -23,8 +23,8 @@ else:
     else:
         load_dotenv()
 
-# API URL (SSH 터널을 통해 localhost:8001로 접근)
-SPLADE_API_URL = os.getenv('SPLADE_API_URL', 'http://localhost:8001')
+# API URL (SSH 터널을 통해 localhost:8002로 접근)
+SPLADE_API_URL = os.getenv('SPLADE_API_URL', 'http://localhost:8002')
 
 
 class RemoteSPLADERetriever:
@@ -33,7 +33,7 @@ class RemoteSPLADERetriever:
     def __init__(self, api_url: str = None):
         """
         Args:
-            api_url: SPLADE API 서버 URL (기본값: http://localhost:8001)
+            api_url: SPLADE API 서버 URL (기본값: http://localhost:8002)
         """
         self.api_url = api_url or SPLADE_API_URL
         self.base_url = self.api_url.rstrip('/')
@@ -365,4 +365,4 @@ if __name__ == "__main__":
         print(f"✅ Encoded (shape: {query_vec.shape}, non-zero: {np.count_nonzero(query_vec)})")
     else:
         print("❌ SPLADE API 서버 연결 실패")
-        print("   SSH 터널을 확인하세요: ssh -L 8001:localhost:8000 [user]@[host] -p [port]")
+        print("SSH 터널을 확인하세요: ssh -L 8002:localhost:8000 [user]@[host] -p [port]")
