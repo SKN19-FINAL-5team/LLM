@@ -50,22 +50,22 @@
 - `backend/scripts/evaluation/evaluate_hybrid_search.py` - 하이브리드 검색 평가
 - `backend/scripts/evaluation/evaluate_splade_poc.py` - SPLADE PoC 평가
 - `backend/scripts/evaluation/evaluate_legal_expert_workflow.py` - 법률 전문가 워크플로우 평가
-- `test/rag/test_agency_recommender.py` - 기관 추천 테스트
-- `test/rag/test_agency_with_real_data.py` - 실제 데이터 기관 추천 테스트
-- `test/rag/test_multi_stage_rag.py` - 멀티 스테이지 RAG 테스트
-- `test/rag/test_rag_simple.py` - 간단한 RAG 테스트
-- `test/rag/test_search_quality.py` - 검색 품질 테스트
-- `test/rag/test_similarity_search.py` - 유사도 검색 테스트
+- `tests/rag/test_agency_recommender.py` - 기관 추천 테스트
+- `tests/rag/test_agency_with_real_data.py` - 실제 데이터 기관 추천 테스트
+- `tests/rag/test_multi_stage_rag.py` - 멀티 스테이지 RAG 테스트
+- `tests/rag/test_rag_simple.py` - 간단한 RAG 테스트
+- `tests/rag/test_search_quality.py` - 검색 품질 테스트
+- `tests/rag/test_similarity_search.py` - 유사도 검색 테스트
 - `backend/scripts/splade/test_splade_remote.py` - SPLADE 원격 테스트 (evaluate_splade_poc.py에서 사용)
 - `backend/scripts/splade/test_splade_naver.py` - SPLADE Naver 테스트 (evaluate_splade_poc.py에서 사용)
 - `backend/scripts/splade/test_splade_bm25.py` - SPLADE BM25 테스트 (evaluate_splade_poc.py에서 사용)
 - `backend/scripts/diagnostics/test_splade_module_access.py` - SPLADE 모듈 접근 테스트 (진단용)
 - `backend/scripts/diagnostics/diagnose_splade_connection.py` - SPLADE 연결 진단 (진단용)
-- `test/integration/test_rag.py` - RAG 테스트
-- `test/integration/test_rag_v2.py` - RAG V2 테스트
-- `test/unit/test_api.py` - API 테스트
-- `test/unit/test_vector_db_schema.py` - Vector DB 스키마 테스트
-- `test/unit/test_chunking_quality.py` - 청킹 품질 테스트
+- `tests/integration/test_rag.py` - RAG 테스트
+- `tests/integration/test_rag_v2.py` - RAG V2 테스트
+- `tests/unit/test_api.py` - API 테스트
+- `tests/unit/test_vector_db_schema.py` - Vector DB 스키마 테스트
+- `tests/unit/test_chunking_quality.py` - 청킹 품질 테스트
 
 **결론**: 모든 테스트 스크립트가 사용 중이거나 진단 목적으로 필요하므로 삭제하지 않았습니다.
 
@@ -124,7 +124,7 @@ docs/
 
 - 루트의 `README.md`는 프로젝트 메인 README이므로 유지
 - `frontend/README.md`는 프론트엔드 프로젝트 README이므로 유지
-- `test/README.md`는 테스트 가이드이므로 유지
+- `tests/README.md`는 테스트 가이드이므로 유지
 - 모든 테스트 스크립트는 사용 중이거나 진단 목적으로 필요하므로 유지
 
 ---

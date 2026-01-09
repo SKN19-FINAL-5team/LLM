@@ -263,7 +263,7 @@ mediation_case  KCDRC          618      1855       365.3       1855
 
 ```bash
 cd /home/maroco/LLM
-python test/integration/test_rag_v2.py
+python tests/integration/test_rag_v2.py
 ```
 
 ### 2. 테스트 모드 선택
