@@ -47,7 +47,7 @@ function App() {
       console.error('Error:', error)
       const errorMessage: Message = {
         id: Date.now() + 1,
-        text: '  .',
+        text: '서버와의 연결에 실패했습니다.',
         sender: 'bot'
       }
       setMessages(prev => [...prev, errorMessage])
@@ -66,14 +66,14 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1> -    </h1>
+        <h1>똑소리 - 소비자 분쟁 조정 챗봇</h1>
       </header>
 
       <div className="chat-container">
         <div className="messages-area">
           {messages.length === 0 ? (
             <div className="empty-state">
-              <p>!     .</p>
+              <p>안녕하세요! 소비자 분쟁 관련 질문을 해주세요.</p>
             </div>
           ) : (
             messages.map(msg => (
@@ -87,7 +87,7 @@ function App() {
           {isLoading && (
             <div className="message bot">
               <div className="message-content loading">
-                  ...
+                답변을 생성하고 있습니다...
               </div>
             </div>
           )}
@@ -99,11 +99,11 @@ function App() {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder=" ..."
+            placeholder="질문을 입력하세요..."
             disabled={isLoading}
           />
           <button onClick={handleSend} disabled={isLoading || !inputText.trim()}>
-            
+            전송
           </button>
         </div>
       </div>

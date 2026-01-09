@@ -1,7 +1,7 @@
 """
-  - RAG  
-: 2026-01-05
- ,  ,    
+똑소리 프로젝트 - RAG 검색 시스템
+작성일: 2026-01-05
+벡터 검색, 하이브리드 검색, 컨텍스트 확장 기능 제공
 """
 
 import psycopg2
@@ -13,7 +13,7 @@ import re
 
 @dataclass
 class SearchResult:
-    """   """
+    """검색 결과 데이터 클래스"""
     chunk_id: str
     doc_id: str
     chunk_type: str
@@ -26,26 +26,26 @@ class SearchResult:
 
 
 class RAGRetriever:
-    """RAG  """
+    """RAG 검색 시스템"""
     
     def __init__(self, db_config: Dict[str, str], embed_api_url: str = "http://localhost:8001/embed"):
         self.db_config = db_config
         self.embed_api_url = embed_api_url
         self.conn = None
         
-        #     
+        # 쿼리 유형별 데이터 소스 가중치
         self.QUERY_TYPE_WEIGHTS = {
-            'legal_interpretation': {  #   
+            'legal_interpretation': {  # 법률 해석 질문
                 'law': 0.6,
                 'mediation_case': 0.3,
                 'counsel_case': 0.1
             },
-            'similar_case': {  #   
+            'similar_case': {  # 유사 사례 질문
                 'mediation_case': 0.5,
                 'counsel_case': 0.4,
                 'law': 0.1
             },
-            'general_inquiry': {  #  
+            'general_inquiry': {  # 일반 문의
                 'counsel_case': 0.5,
                 'mediation_case': 0.3,
                 'law': 0.2
@@ -53,16 +53,16 @@ class RAGRetriever:
         }
     
     def connect(self):
-        """ """
+        """데이터베이스 연결"""
         self.conn = psycopg2.connect(**self.db_config)
     
     def close(self):
-        """  """
+        """데이터베이스 연결 종료"""
         if self.conn:
             self.conn.close()
     
     def embed_query(self, query: str) -> List[float]:
-        """  """
+        """쿼리 임베딩 생성"""
         try:
             response = requests.post(
                 self.embed_api_url,
@@ -73,7 +73,7 @@ class RAGRetriever:
             embeddings = response.json()['embeddings']
             return embeddings[0]
         except requests.exceptions.RequestException as e:
-            raise Exception(f" API : {e}")
+            raise Exception(f"임베딩 API 오류: {e}")
     
     def vector_search(
         self,
@@ -82,11 +82,11 @@ class RAGRetriever:
         doc_type_filter: Optional[str] = None,
         chunk_type_filter: Optional[str] = None
     ) -> List[SearchResult]:
-        """  """
-        #   
+        """벡터 유사도 검색"""
+        # 쿼리 임베딩 생성
         query_embedding = self.embed_query(query)
         
-        #  
+        # 데이터베이스 검색
         with self.conn.cursor() as cur:
             cur.execute(
                 """
@@ -138,12 +138,12 @@ class RAGRetriever:
         top_k: int = 10,
         doc_type_filter: Optional[str] = None
     ) -> List[SearchResult]:
-        """   (PostgreSQL  )"""
-        #    ( )
+        """키워드 기반 검색 (PostgreSQL 전문 검색)"""
+        # 한국어 키워드 추출 (간단한 토큰화)
         keywords = self._extract_keywords(query)
         
         with self.conn.cursor() as cur:
-            # LIKE  ( )
+            # LIKE 검색 (간단한 구현)
             search_pattern = f"%{query}%"
             
             cur.execute(
@@ -194,22 +194,22 @@ class RAGRetriever:
         keyword_weight: float = 0.3,
         doc_type_filter: Optional[str] = None
     ) -> List[SearchResult]:
-        """  ( + )"""
-        #  
+        """하이브리드 검색 (벡터 + 키워드)"""
+        # 벡터 검색
         vector_results = self.vector_search(
             query,
             top_k=top_k * 2,
             doc_type_filter=doc_type_filter
         )
         
-        #  
+        # 키워드 검색
         keyword_results = self.keyword_search(
             query,
             top_k=top_k * 2,
             doc_type_filter=doc_type_filter
         )
         
-        #     
+        # 결과 병합 및 가중치 적용
         merged_results = {}
         
         for result in vector_results:
@@ -227,14 +227,14 @@ class RAGRetriever:
                     'score': result.similarity * keyword_weight
                 }
         
-        #   
+        # 점수 기준 정렬
         sorted_results = sorted(
             merged_results.values(),
             key=lambda x: x['score'],
             reverse=True
         )
         
-        #    
+        # 점수 업데이트 및 반환
         final_results = []
         for item in sorted_results[:top_k]:
             result = item['result']
@@ -249,25 +249,25 @@ class RAGRetriever:
         query_type: str = 'general_inquiry',
         top_k: int = 10
     ) -> List[SearchResult]:
-        """   (   )"""
+        """멀티 소스 검색 (데이터 유형별 가중치 적용)"""
         weights = self.QUERY_TYPE_WEIGHTS.get(query_type, self.QUERY_TYPE_WEIGHTS['general_inquiry'])
         
         all_results = []
         
         for doc_type, weight in weights.items():
-            #    
+            # 각 데이터 소스별 검색
             results = self.vector_search(
                 query,
                 top_k=int(top_k * weight * 2),
                 doc_type_filter=doc_type
             )
             
-            #  
+            # 가중치 적용
             for result in results:
                 result.similarity *= weight
                 all_results.append(result)
         
-        #   
+        # 점수 기준 정렬
         all_results.sort(key=lambda x: x.similarity, reverse=True)
         
         return all_results[:top_k]
@@ -277,7 +277,7 @@ class RAGRetriever:
         chunk_id: str,
         window_size: int = 1
     ) -> List[SearchResult]:
-        """   """
+        """청크와 주변 컨텍스트 조회"""
         with self.conn.cursor() as cur:
             cur.execute(
                 """
@@ -288,7 +288,7 @@ class RAGRetriever:
             
             results = []
             for row in cur.fetchall():
-                #   
+                # 추가 정보 조회
                 cur.execute(
                     """
                     SELECT d.title, d.doc_type, d.category_path
@@ -318,12 +318,12 @@ class RAGRetriever:
         results: List[SearchResult],
         window_size: int = 1
     ) -> List[SearchResult]:
-        """    """
+        """검색 결과에 대한 컨텍스트 확장"""
         expanded_results = []
         seen_chunk_ids = set()
         
         for result in results:
-            #   
+            # 주변 청크 조회
             context_chunks = self.get_chunk_with_context(result.chunk_id, window_size)
             
             for chunk in context_chunks:
@@ -334,30 +334,30 @@ class RAGRetriever:
         return expanded_results
     
     def _extract_keywords(self, query: str) -> List[str]:
-        """   ( )"""
-        #    ( )
-        #  KoNLPy    
-        keywords = re.findall(r'[-]+', query)
+        """쿼리에서 키워드 추출 (간단한 구현)"""
+        # 한국어 명사 추출 (간단한 토큰화)
+        # 실제로는 KoNLPy 등을 사용하는 것이 좋음
+        keywords = re.findall(r'[가-힣]+', query)
         return [kw for kw in keywords if len(kw) >= 2]
     
     def format_results_for_llm(self, results: List[SearchResult]) -> str:
-        """  LLM   """
+        """검색 결과를 LLM 입력 형식으로 포맷팅"""
         formatted = []
         
         for i, result in enumerate(results, 1):
-            formatted.append(f"[  {i}]")
-            formatted.append(f" : {result.doc_type}")
-            formatted.append(f": {result.doc_title}")
-            formatted.append(f" : {result.chunk_type}")
-            formatted.append(f": {result.similarity:.4f}")
-            formatted.append(f"\n:\n{result.content}")
+            formatted.append(f"[검색 결과 {i}]")
+            formatted.append(f"문서 유형: {result.doc_type}")
+            formatted.append(f"제목: {result.doc_title}")
+            formatted.append(f"청크 유형: {result.chunk_type}")
+            formatted.append(f"유사도: {result.similarity:.4f}")
+            formatted.append(f"\n내용:\n{result.content}")
             formatted.append("\n" + "=" * 60 + "\n")
         
         return "\n".join(formatted)
 
 
 def main():
-    """  """
+    """테스트용 메인 함수"""
     import os
     from dotenv import load_dotenv
     
@@ -377,20 +377,20 @@ def main():
     retriever.connect()
     
     try:
-        #  
-        query = "   ?"
-        print(f": {query}\n")
+        # 테스트 쿼리
+        query = "환불 받을 수 있나요?"
+        print(f"쿼리: {query}\n")
         
-        #  
-        print("===   ===")
+        # 벡터 검색
+        print("=== 벡터 검색 ===")
         results = retriever.vector_search(query, top_k=3)
         for i, result in enumerate(results, 1):
-            print(f"{i}. {result.doc_title} ({result.doc_type}) - : {result.similarity:.4f}")
+            print(f"{i}. {result.doc_title} ({result.doc_type}) - 유사도: {result.similarity:.4f}")
         
-        print("\n===   ===")
+        print("\n=== 하이브리드 검색 ===")
         results = retriever.hybrid_search(query, top_k=3)
         for i, result in enumerate(results, 1):
-            print(f"{i}. {result.doc_title} ({result.doc_type}) - : {result.similarity:.4f}")
+            print(f"{i}. {result.doc_title} ({result.doc_type}) - 점수: {result.similarity:.4f}")
         
     finally:
         retriever.close()

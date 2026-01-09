@@ -1,6 +1,6 @@
 """
-BM25  Sparse Retrieval  
-       
+BM25 기반 Sparse Retrieval 테스트 스니펫
+법령 및 분쟁조정기준 데이터에 대한 키워드 기반 검색
 """
 
 import psycopg2
@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 
 class BM25SparseRetriever:
-    """BM25  Sparse Retrieval (SPLADE )"""
+    """BM25 기반 Sparse Retrieval (SPLADE 시뮬레이션)"""
     
     def __init__(self, db_config: Dict):
         self.db_config = db_config
@@ -22,42 +22,35 @@ class BM25SparseRetriever:
             self.conn = psycopg2.connect(**self.db_config)
     
     def extract_keywords(self, query: str) -> List[str]:
-        """   """
+        """쿼리에서 핵심 키워드 추출"""
         keywords = []
         
-        # 
-        law_names = ['', '', '', '', '']
+        # 법령명
+        law_names = ['민법', '상법', '소비자기본법', '전자상거래법', '약관규제법']
         keywords.extend([law for law in law_names if law in query])
         
-        #  
-        articles = re.findall(r'\s*\d+\s*', query)
+        # 조문 번호
+        articles = re.findall(r'제\s*\d+\s*조', query)
         keywords.extend(articles)
         
-        #  
-        paragraphs = re.findall(r'\s*\d+\s*', query)
+        # 항 번호
+        paragraphs = re.findall(r'제\s*\d+\s*항', query)
         keywords.extend(paragraphs)
         
-        #  (Phase 2   )
+        # 품목명 (Phase 2에서 확장된 사전 활용)
         products = [
-            '', '', '', 'TV', '', '', '', 
-            '', '', '', '', '', '', 
-            '', '', '', '', '', '', 
-            '', '', '', '', '', ''
+            '냉장고', '세탁기', '에어컨', 'TV', '텔레비전', '스마트폰', '휴대폰', 
+            '노트북', '컴퓨터', '모니터', '프린터', '청소기', '전자레인지', 
+            '밥솥', '정수기', '공기청정기', '가습기', '선풍기', '보일러', 
+            '비데', '안마의자', '식기세척기', '의류건조기', '다리미', '믹서기'
         ]
         keywords.extend([p for p in products if p in query])
         
-        #   
-        dispute_types = [
-            '', '', '', '', '', '', '',
-            '', '', '', '', '', '', ''
-        ]
-        keywords.extend([d for d in dispute_types if d in query])
-        
-        #   (2  )
-        korean_words = re.findall(r'[-]{2,}', query)
+        # 일반 키워드 (2글자 이상 한글)
+        korean_words = re.findall(r'[가-힣]{2,}', query)
         keywords.extend(korean_words)
         
-        #      
+        # 중복 제거 및 빈 문자열 제거
         keywords = [k.strip() for k in keywords if k.strip()]
         return list(set(keywords))
     
@@ -66,7 +59,7 @@ class BM25SparseRetriever:
         query: str,
         top_k: int = 10
     ) -> List[Dict]:
-        """ BM25 """
+        """법령 BM25 검색"""
         self.connect_db()
         keywords = self.extract_keywords(query)
         
@@ -74,7 +67,7 @@ class BM25SparseRetriever:
             return []
         
         # PostgreSQL Full-Text Search with BM25-like ranking
-        #     to_tsvector plainto_tsquery 
+        # 한국어 텍스트 검색을 위해 to_tsvector와 plainto_tsquery 사용
         sql = """
             SELECT 
                 c.chunk_id,
@@ -116,7 +109,7 @@ class BM25SparseRetriever:
         query: str,
         top_k: int = 10
     ) -> List[Dict]:
-        """ BM25 """
+        """기준 BM25 검색"""
         self.connect_db()
         keywords = self.extract_keywords(query)
         
@@ -158,150 +151,9 @@ class BM25SparseRetriever:
             })
         
         return results
-    
-    def search_mediation_bm25(
-        self,
-        query: str,
-        top_k: int = 10
-    ) -> List[Dict]:
-        """  BM25 """
-        self.connect_db()
-        keywords = self.extract_keywords(query)
-        
-        if not keywords:
-            return []
-        
-        sql = """
-            SELECT 
-                c.chunk_id,
-                c.doc_id,
-                c.content,
-                c.chunk_type,
-                d.metadata->>'case_no' AS case_no,
-                d.metadata->>'decision_date' AS decision_date,
-                d.source_org AS agency,
-                ts_rank_cd(
-                    to_tsvector('simple', c.content),
-                    plainto_tsquery('simple', %s),
-                    32
-                ) AS bm25_score
-            FROM chunks c
-            JOIN documents d ON c.doc_id = d.doc_id
-            WHERE 
-                d.doc_type = 'mediation_case'
-                AND c.drop = FALSE
-                AND to_tsvector('simple', c.content) @@ plainto_tsquery('simple', %s)
-            ORDER BY bm25_score DESC
-            LIMIT %s
-        """
-        
-        cur = self.conn.cursor()
-        keyword_query = ' '.join(keywords)
-        cur.execute(sql, (keyword_query, keyword_query, top_k))
-        
-        results = []
-        for row in cur.fetchall():
-            results.append({
-                'chunk_id': row[0],
-                'doc_id': row[1],
-                'content': row[2],
-                'chunk_type': row[3],
-                'case_no': row[4],
-                'decision_date': row[5],
-                'agency': row[6],
-                'bm25_score': float(row[7]) if row[7] else 0.0
-            })
-        
-        return results
-    
-    def search_counsel_bm25(
-        self,
-        query: str,
-        top_k: int = 10
-    ) -> List[Dict]:
-        """  BM25 """
-        self.connect_db()
-        keywords = self.extract_keywords(query)
-        
-        if not keywords:
-            return []
-        
-        sql = """
-            SELECT 
-                c.chunk_id,
-                c.doc_id,
-                c.content,
-                c.chunk_type,
-                d.metadata->>'case_no' AS case_no,
-                d.metadata->>'case_sn' AS case_sn,
-                d.metadata->>'decision_date' AS decision_date,
-                d.source_org AS agency,
-                ts_rank_cd(
-                    to_tsvector('simple', c.content),
-                    plainto_tsquery('simple', %s),
-                    32
-                ) AS bm25_score
-            FROM chunks c
-            JOIN documents d ON c.doc_id = d.doc_id
-            WHERE 
-                d.doc_type = 'counsel_case'
-                AND c.drop = FALSE
-                AND to_tsvector('simple', c.content) @@ plainto_tsquery('simple', %s)
-            ORDER BY bm25_score DESC
-            LIMIT %s
-        """
-        
-        cur = self.conn.cursor()
-        keyword_query = ' '.join(keywords)
-        cur.execute(sql, (keyword_query, keyword_query, top_k))
-        
-        results = []
-        for row in cur.fetchall():
-            results.append({
-                'chunk_id': row[0],
-                'doc_id': row[1],
-                'content': row[2],
-                'chunk_type': row[3],
-                'case_no': row[4] or row[5],  # case_no  case_sn
-                'decision_date': row[6],
-                'agency': row[7],
-                'bm25_score': float(row[8]) if row[8] else 0.0
-            })
-        
-        return results
-    
-    def search_case_bm25(
-        self,
-        query: str,
-        top_k: int = 10
-    ) -> List[Dict]:
-        """  BM25  ( + )"""
-        self.connect_db()
-        keywords = self.extract_keywords(query)
-        
-        if not keywords:
-            return []
-        
-        #      
-        mediation_results = self.search_mediation_bm25(query, top_k=top_k)
-        counsel_results = self.search_counsel_bm25(query, top_k=top_k)
-        
-        #    
-        all_results = []
-        for r in mediation_results:
-            r['source'] = 'mediation_case'
-            all_results.append(r)
-        
-        for r in counsel_results:
-            r['source'] = 'counsel_case'
-            all_results.append(r)
-        
-        #   
-        all_results.sort(key=lambda x: x['bm25_score'], reverse=True)
-        return all_results[:top_k]
 
 
-#  
+# 사용 예시
 if __name__ == "__main__":
     load_dotenv()
     
@@ -315,42 +167,17 @@ if __name__ == "__main__":
     
     retriever = BM25SparseRetriever(db_config)
     
-    # Law  
-    print("=== Law BM25  ===")
-    results = retriever.search_law_bm25(" 750 ")
+    # Law 검색 테스트
+    print("=== Law BM25 검색 ===")
+    results = retriever.search_law_bm25("민법 제750조 불법행위")
     for i, r in enumerate(results[:3], 1):
         print(f"{i}. {r['law_name']} - Score: {r['bm25_score']:.4f}")
         print(f"   {r['content'][:100]}...")
     
-    # Criteria  
-    print("\n=== Criteria BM25  ===")
-    results = retriever.search_criteria_bm25("  ")
+    # Criteria 검색 테스트
+    print("\n=== Criteria BM25 검색 ===")
+    results = retriever.search_criteria_bm25("냉장고 품질보증 기준")
     for i, r in enumerate(results[:3], 1):
         item = r.get('item', 'N/A')
         print(f"{i}. {item} - Score: {r['bm25_score']:.4f}")
-        print(f"   {r['content'][:100]}...")
-    
-    # Mediation Case  
-    print("\n=== Mediation Case BM25  ===")
-    results = retriever.search_mediation_bm25("  ")
-    for i, r in enumerate(results[:3], 1):
-        case_no = r.get('case_no', 'N/A')
-        print(f"{i}. : {case_no} - Score: {r['bm25_score']:.4f}")
-        print(f"   {r['content'][:100]}...")
-    
-    # Counsel Case  
-    print("\n=== Counsel Case BM25  ===")
-    results = retriever.search_counsel_bm25("  ")
-    for i, r in enumerate(results[:3], 1):
-        case_no = r.get('case_no', 'N/A')
-        print(f"{i}. : {case_no} - Score: {r['bm25_score']:.4f}")
-        print(f"   {r['content'][:100]}...")
-    
-    #  Case  
-    print("\n===  Case BM25  ===")
-    results = retriever.search_case_bm25("  ")
-    for i, r in enumerate(results[:3], 1):
-        case_no = r.get('case_no', 'N/A')
-        source = r.get('source', 'N/A')
-        print(f"{i}. [{source}] : {case_no} - Score: {r['bm25_score']:.4f}")
         print(f"   {r['content'][:100]}...")
