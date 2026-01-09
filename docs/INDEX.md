@@ -108,11 +108,11 @@
 
 | 파일 | 테스트 대상 |
 |------|-------------|
-| [`test/unit/test_vector_db_schema.py`](../test/unit/test_vector_db_schema.py) | Vector DB 스키마 성능 |
-| [`test/unit/test_chunking_quality.py`](../test/unit/test_chunking_quality.py) | 청킹 품질 |
-| [`test/unit/test_api.py`](../test/unit/test_api.py) | FastAPI 엔드포인트 |
-| [`test/integration/test_rag.py`](../test/integration/test_rag.py) | RAG 파이프라인 |
-| [`test/integration/test_rag_v2.py`](../test/integration/test_rag_v2.py) | RAG V2 파이프라인 |
+| [`tests/unit/test_vector_db_schema.py`](../tests/unit/test_vector_db_schema.py) | Vector DB 스키마 성능 |
+| [`tests/unit/test_chunking_quality.py`](../tests/unit/test_chunking_quality.py) | 청킹 품질 |
+| [`tests/unit/test_api.py`](../tests/unit/test_api.py) | FastAPI 엔드포인트 |
+| [`tests/integration/test_rag.py`](../tests/integration/test_rag.py) | RAG 파이프라인 |
+| [`tests/integration/test_rag_v2.py`](../tests/integration/test_rag_v2.py) | RAG V2 파이프라인 |
 
 ### 5.2 테스트 데이터
 
@@ -150,7 +150,7 @@
 
 ### 7.3 QA/테스터
 
-1. [`test/README.md`](../test/README.md) - 테스트 가이드
+1. [`tests/README.md`](../tests/README.md) - 테스트 가이드
 2. [`backend/evaluation/README.md`](../backend/evaluation/README.md) - 평가 시스템
 3. [`vector_db_스키마_평가_보고서.md`](./technical/vector_db_스키마_평가_보고서.md) - 성능 벤치마크
 4. [`청킹_로직_평가_보고서.md`](./technical/청킹_로직_평가_보고서.md) - 품질 평가

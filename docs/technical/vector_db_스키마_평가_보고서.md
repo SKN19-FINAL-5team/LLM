@@ -581,4 +581,4 @@ ON mv_popular_chunks USING ivfflat(embedding vector_cosine_ops);
 **참고 파일**:
 - [`schema_v2_final.sql`](../../backend/database/schema_v2_final.sql)
 - 테스트 결과: `/tmp/vector_db_test_results.json`
-- 테스트 코드: [`test_vector_db_schema.py`](../../test/unit/test_vector_db_schema.py)
+- 테스트 코드: [`test_vector_db_schema.py`](../../tests/unit/test_vector_db_schema.py)

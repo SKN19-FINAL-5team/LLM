@@ -47,7 +47,7 @@ OPENAI_API_KEY=your_api_key
 
 ```bash
 # 멀티 스테이지 RAG 테스트 실행
-python test/rag/test_multi_stage_rag.py
+python tests/rag/test_multi_stage_rag.py
 ```
 
 **출력 내용:**
@@ -129,7 +129,7 @@ python scripts/analytics/analyze_rag_results.py
 ```bash
 # backend 디렉토리에서 실행하는지 확인
 cd /home/maroco/ddoksori_demo/backend
-python test/rag/test_multi_stage_rag.py
+python tests/rag/test_multi_stage_rag.py
 ```
 
 ### 오류: "psycopg2.OperationalError: could not connect to server"
