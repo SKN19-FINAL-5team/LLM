@@ -55,14 +55,14 @@ logs/
 models/
 
 # Test artifacts
-test/**/*.log
-test/**/results/
-test/**/cache/
+tests/**/*.log
+tests/**/results/
+tests/**/cache/
 
 # SPLADE POC
-test/splade_poc/models/
-test/splade_poc/__pycache__/
-test/splade_poc/*.pyc
+tests/splade_poc/models/
+tests/splade_poc/__pycache__/
+tests/splade_poc/*.pyc
 
 # Temporary test results
 /tmp/vector_db_test_results.json
