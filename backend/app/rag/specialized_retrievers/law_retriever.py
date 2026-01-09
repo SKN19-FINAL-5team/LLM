@@ -333,9 +333,9 @@ class LawRetriever:
             SELECT * FROM hybrid_search_chunks(
                 query_embedding := %s::vector,
                 query_keywords := %s,
-                doc_type_filter := 'law',
-                chunk_type_filter := NULL,
-                source_org_filter := NULL,
+                doc_type_filter := 'law'::VARCHAR(50),
+                chunk_type_filter := NULL::VARCHAR(50),
+                source_org_filter := NULL::VARCHAR(100),
                 vector_weight := %s,
                 keyword_weight := %s,
                 top_k := %s,
