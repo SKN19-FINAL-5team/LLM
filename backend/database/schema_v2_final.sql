@@ -54,7 +54,6 @@ CREATE TABLE chunks (
     content TEXT NOT NULL,
     content_length INTEGER,
     embedding vector(1024),  -- KURE-v1 차원 (1024)
-    embedding_model VARCHAR(50) DEFAULT 'KURE-v1',
     drop BOOLEAN DEFAULT FALSE,  -- 삭제 플래그 (검색에서 제외할 청크)
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
@@ -84,10 +83,8 @@ CREATE TABLE chunk_relations (
     source_chunk_id VARCHAR(255) NOT NULL REFERENCES chunks(chunk_id) ON DELETE CASCADE,
     target_chunk_id VARCHAR(255) NOT NULL REFERENCES chunks(chunk_id) ON DELETE CASCADE,
     relation_type VARCHAR(50) NOT NULL,  -- 'next', 'prev', 'related', 'cited'
-    confidence FLOAT DEFAULT 1.0,  -- 관계 신뢰도 (0.0 ~ 1.0)
     created_at TIMESTAMP DEFAULT NOW(),
     PRIMARY KEY (source_chunk_id, target_chunk_id, relation_type),
-    CHECK (confidence >= 0.0 AND confidence <= 1.0)
 );
 
 -- 인덱스 생성
@@ -112,7 +109,6 @@ SELECT
     c.content,
     c.content_length,
     c.embedding,
-    c.embedding_model,
     c.drop,
     d.doc_type,
     d.title AS doc_title,
