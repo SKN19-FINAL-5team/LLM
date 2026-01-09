@@ -1,106 +1,106 @@
-# PR #4 준비: 멀티 에이전트 시스템 구축
+# PR #4 :    
 
-이 브랜치는 PR #4 개발을 위한 준비 단계입니다. 데이터가 추가되는 대로 이 브랜치에서 바로 작업을 진행합니다.
-
----
-
-## 📋 포함된 문서
-
-1. **PR4_PLANNING.md**: 수정된 프로젝트 계획 및 PR #4 멀티 에이전트 시스템 설계
-2. **PR4_DATA_SCHEMA.md**: 4가지 데이터 종류(법령, 분쟁조정기준, 분쟁조정사례, 상담사례)를 위한 데이터베이스 스키마 설계
+  PR #4    .        .
 
 ---
 
-## 🎯 PR #4 목표
+##   
 
-### 1. 데이터 종류 확장
+1. **PR4_PLANNING.md**:     PR #4    
+2. **PR4_DATA_SCHEMA.md**: 4  (, , , )    
 
-기존의 **분쟁조정사례**에 더해 다음 데이터를 추가합니다:
+---
 
-| 데이터 종류 | 역할 | 우선순위 |
+##  PR #4 
+
+### 1.   
+
+ ****    :
+
+|   |  |  |
 |---|---|---|
-| **법령** | 관할 조정위원회 판단 | 1 |
-| **분쟁조정기준** | 관할 조정위원회 판단 | 1 |
-| **분쟁조정사례** | 유사 사례 제시 (실질 효력 있음) | 2 |
-| **상담사례** | 유사 사례 제시 (실질 효력 없음) | 3 (Fallback) |
+| **** |    | 1 |
+| **** |    | 1 |
+| **** |    (  ) | 2 |
+| **** |    (  ) | 3 (Fallback) |
 
-### 2. 멀티 에이전트 시스템 구축
+### 2.    
 
-**LangGraph 기반 3가지 에이전트:**
+**LangGraph  3 :**
 
-1. **Jurisdiction Agent**: 법령 + 분쟁조정기준 → 관할 조정위원회 판단
-2. **Precedent Agent**: 분쟁조정사례 검색 (우선순위 높음)
-3. **Consultation Agent**: 상담사례 검색 (Fallback)
+1. **Jurisdiction Agent**:  +  →   
+2. **Precedent Agent**:   ( )
+3. **Consultation Agent**:   (Fallback)
 
-**워크플로우:**
+**:**
 ```
-사용자 질문
+ 
     ↓
-Supervisor (라우터)
+Supervisor ()
     ↓
-Jurisdiction Agent (관할 판단)
+Jurisdiction Agent ( )
     ↓
-Precedent Agent (분쟁조정사례 검색)
+Precedent Agent ( )
     ↓
-[검색 결과 있음?]
-    ├─ Yes → 최종 답변 생성
-    └─ No → Consultation Agent (상담사례 검색) → 최종 답변 생성
+[  ?]
+     Yes →   
+     No → Consultation Agent ( ) →   
 ```
 
-### 3. 중요 원칙: 법적 판단 금지
+### 3.  :   
 
-⚠️ **본 시스템은 절대로 법적 판단을 내리지 않습니다.**
+ **      .**
 
-- ❌ "100% 환불받을 수 있습니다"
-- ❌ "승소할 수 있습니다"
-- ✅ "유사한 사례에 따르면 ~한 결정이 내려진 적이 있습니다"
-- ✅ "관련 법규에 따르면 ~으로 해석될 수 있습니다"
+-  "100%   "
+-  "  "
+-  "   ~    "
+-  "   ~   "
 
-**모든 답변에 면책 조항(Disclaimer) 포함:**
-> "본 답변은 제공된 정보를 바탕으로 한 참고용이며, 법적 효력을 갖지 않습니다. 정확한 판단을 위해서는 변호사 등 법률 전문가와 상담하시기 바랍니다."
-
----
-
-## 📦 필요한 데이터 파일
-
-PR #4 개발을 위해 다음 JSONL 파일이 필요합니다:
-
-1. ✅ `kca_final_rag_chunks_normalized.jsonl` (이미 추가됨)
-2. ✅ `ecmc_final_rag_chunks_normalized.jsonl` (이미 추가됨)
-3. ✅ `kcdrc_final_rag_chunks_normalized.jsonl` (이미 추가됨)
-4. ⏳ `laws.jsonl` (법령 데이터) - **대기 중**
-5. ⏳ `standards.jsonl` (분쟁조정기준 데이터) - **대기 중**
-6. ⏳ `consultation_cases.jsonl` (상담사례 데이터) - **대기 중**
+**   (Disclaimer) :**
+> "      ,    .         ."
 
 ---
 
-## 🚀 다음 단계
+##    
 
-1. **데이터 준비 완료 시**: 이 브랜치에서 바로 작업 시작
-2. **데이터베이스 스키마 업데이트**: `laws`, `standards` 테이블 추가
-3. **임베딩 파이프라인 확장**: 새로운 데이터 종류 처리
-4. **LangGraph 워크플로우 구현**: 멀티 에이전트 시스템 구축
-5. **테스트 및 검증**: 전체 파이프라인 테스트
+PR #4    JSONL  :
 
----
-
-## 📚 참고 문서
-
-- **PR4_PLANNING.md**: 전체 프로젝트 계획 및 멀티 에이전트 설계
-- **PR4_DATA_SCHEMA.md**: 데이터베이스 스키마 상세 설계
-- **PR3_SETUP.md**: 기존 RAG 시스템 (참고용)
+1.  `kca_final_rag_chunks_normalized.jsonl` ( )
+2.  `ecmc_final_rag_chunks_normalized.jsonl` ( )
+3.  `kcdrc_final_rag_chunks_normalized.jsonl` ( )
+4. ⏳ `laws.jsonl` ( ) - ** **
+5. ⏳ `standards.jsonl` ( ) - ** **
+6. ⏳ `consultation_cases.jsonl` ( ) - ** **
 
 ---
 
-## 💡 개발 시 주의사항
+##   
 
-1. **법적 판단 금지**: 모든 LLM 프롬프트에 면책 조항 포함
-2. **검색 우선순위**: 분쟁조정사례 → 상담사례 순서 준수
-3. **데이터 타입 구분**: `data_type` 및 `case_type` 컬럼 활용
-4. **에이전트 독립성**: 각 에이전트는 독립적으로 동작 가능해야 함
-5. **테스트 커버리지**: 각 에이전트별 단위 테스트 작성
+1. **   **:     
+2. **  **: `laws`, `standards`  
+3. **  **:    
+4. **LangGraph  **:    
+5. **  **:   
 
 ---
 
-**작성자**: Manus AI  
-**최종 수정일**: 2026-01-04
+##   
+
+- **PR4_PLANNING.md**:       
+- **PR4_DATA_SCHEMA.md**:    
+- **PR3_SETUP.md**:  RAG  ()
+
+---
+
+##    
+
+1. **  **:  LLM    
+2. ** **:  →   
+3. **  **: `data_type`  `case_type`  
+4. ** **:      
+5. ** **:     
+
+---
+
+****: Manus AI  
+** **: 2026-01-04

@@ -1,6 +1,6 @@
 """
 Multi-Method Retriever Module
-모든 검색 방법(cosine, BM25, SPLADE, hybrid)을 통합하여 실행하는 모듈
+  (cosine, BM25, SPLADE, hybrid)   
 """
 
 import os
@@ -9,7 +9,7 @@ from typing import List, Dict, Optional
 from pathlib import Path
 import sys
 
-# 프로젝트 경로 추가
+#   
 backend_dir = Path(__file__).parent.parent
 project_root = backend_dir.parent
 sys.path.insert(0, str(project_root))
@@ -18,7 +18,7 @@ sys.path.insert(0, str(backend_dir))
 from app.rag.retriever import VectorRetriever
 from app.rag.hybrid_retriever import HybridRetriever
 
-# BM25 및 SPLADE import (선택적)
+# BM25  SPLADE import ()
 try:
     from scripts.splade.test_splade_bm25 import BM25SparseRetriever
     BM25_AVAILABLE = True
@@ -35,50 +35,50 @@ except ImportError:
 
 
 class MultiMethodRetriever:
-    """모든 검색 방법을 통합하여 실행하는 클래스"""
+    """     """
     
     def __init__(self, db_config: Dict):
         """
         Args:
-            db_config: 데이터베이스 연결 설정
+            db_config:   
         """
         self.db_config = db_config
         
-        # 기본 retriever 초기화
+        #  retriever 
         self.vector_retriever = VectorRetriever(db_config)
         self.hybrid_retriever = HybridRetriever(db_config)
         
-        # 선택적 retriever 초기화
+        #  retriever 
         self.bm25_retriever = None
         self.splade_retriever = None
         
         if BM25_AVAILABLE:
             try:
                 self.bm25_retriever = BM25SparseRetriever(db_config)
-                print("✅ BM25 Retriever 초기화 완료")
+                print("BM25 Retriever 초기화 완료")
             except Exception as e:
-                print(f"⚠️  BM25 Retriever 초기화 실패: {e}")
+                print(f"BM25 Retriever 초기화 실패: {e}")
         
         if SPLADE_AVAILABLE:
             try:
                 self.splade_retriever = OptimizedSPLADEDBRetriever(db_config)
-                print("✅ SPLADE Retriever 초기화 완료")
+                print("SPLADE Retriever 초기화 완료")
             except Exception as e:
-                print(f"⚠️  SPLADE Retriever 초기화 실패: {e}")
+                print(f"SPLADE Retriever 초기화 실패: {e}")
     
     def _normalize_result(self, result: Dict, method_name: str, score_key: str = 'similarity') -> Dict:
         """
-        검색 결과를 일관된 형식으로 정규화
+            
         
         Args:
-            result: 검색 결과 딕셔너리
-            method_name: 검색 방법 이름
-            score_key: 점수 필드 이름
+            result:   
+            method_name:   
+            score_key:   
         
         Returns:
-            정규화된 결과 딕셔너리
+              
         """
-        # 공통 필드 매핑
+        #   
         normalized = {
             'chunk_id': result.get('chunk_id') or result.get('chunk_uid'),
             'doc_id': result.get('doc_id') or result.get('case_uid'),
@@ -92,7 +92,7 @@ class MultiMethodRetriever:
             'score': result.get(score_key, result.get('similarity', 0.0))
         }
         
-        # 메타데이터 추가
+        #  
         if 'metadata' in result:
             normalized['metadata'] = result['metadata']
         
@@ -100,14 +100,14 @@ class MultiMethodRetriever:
     
     def search_cosine(self, query: str, top_k: int = 10) -> Dict:
         """
-        Cosine Similarity 검색
+        Cosine Similarity 
         
         Args:
-            query: 검색 쿼리
-            top_k: 반환할 최대 결과 수
+            query:  
+            top_k:    
         
         Returns:
-            검색 결과 딕셔너리 (results, count, elapsed_time)
+               (results, count, elapsed_time)
         """
         start_time = time.time()
         try:
@@ -138,14 +138,14 @@ class MultiMethodRetriever:
     
     def search_bm25(self, query: str, top_k: int = 10) -> Dict:
         """
-        BM25 검색
+        BM25 
         
         Args:
-            query: 검색 쿼리
-            top_k: 반환할 최대 결과 수
+            query:  
+            top_k:    
         
         Returns:
-            검색 결과 딕셔너리
+              
         """
         if not self.bm25_retriever:
             return {
@@ -159,41 +159,41 @@ class MultiMethodRetriever:
         
         start_time = time.time()
         try:
-            # BM25는 법령, 기준, 사례 검색을 지원
+            # BM25 , ,   
             law_results = self.bm25_retriever.search_law_bm25(query, top_k=top_k)
             criteria_results = self.bm25_retriever.search_criteria_bm25(query, top_k=top_k)
             
-            # 사례 검색 (분쟁조정 + 피해구제)
+            #   ( + )
             mediation_results = []
             counsel_results = []
             if hasattr(self.bm25_retriever, 'search_mediation_bm25'):
                 try:
                     mediation_results = self.bm25_retriever.search_mediation_bm25(query, top_k=top_k)
                 except Exception as e:
-                    print(f"⚠️  Mediation BM25 검색 실패: {e}")
+                    print(f"Mediation BM25 검색 실패: {e}")
             
             if hasattr(self.bm25_retriever, 'search_counsel_bm25'):
                 try:
                     counsel_results = self.bm25_retriever.search_counsel_bm25(query, top_k=top_k)
                 except Exception as e:
-                    print(f"⚠️  Counsel BM25 검색 실패: {e}")
+                    print(f"Counsel BM25 검색 실패: {e}")
             
-            # 결과 통합 및 정규화
+            #    
             all_results = []
             
-            # 법령 결과
+            #  
             for r in law_results:
                 normalized = self._normalize_result(r, 'bm25', 'bm25_score')
                 normalized['source'] = 'law'
                 all_results.append(normalized)
             
-            # 기준 결과
+            #  
             for r in criteria_results:
                 normalized = self._normalize_result(r, 'bm25', 'bm25_score')
                 normalized['source'] = 'criteria'
                 all_results.append(normalized)
             
-            # 분쟁조정 사례 결과
+            #   
             for r in mediation_results:
                 normalized = self._normalize_result(r, 'bm25', 'bm25_score')
                 normalized['source'] = 'mediation_case'
@@ -202,7 +202,7 @@ class MultiMethodRetriever:
                 normalized['agency'] = r.get('agency', '')
                 all_results.append(normalized)
             
-            # 피해구제 사례 결과
+            #   
             for r in counsel_results:
                 normalized = self._normalize_result(r, 'bm25', 'bm25_score')
                 normalized['source'] = 'counsel_case'
@@ -211,7 +211,7 @@ class MultiMethodRetriever:
                 normalized['agency'] = r.get('agency', '')
                 all_results.append(normalized)
             
-            # 점수 기준 정렬
+            #   
             all_results.sort(key=lambda x: x['score'], reverse=True)
             all_results = all_results[:top_k]
             
@@ -237,14 +237,14 @@ class MultiMethodRetriever:
     
     def search_splade(self, query: str, top_k: int = 10) -> Dict:
         """
-        SPLADE 검색
+        SPLADE 
         
         Args:
-            query: 검색 쿼리
-            top_k: 반환할 최대 결과 수
+            query:  
+            top_k:    
         
         Returns:
-            검색 결과 딕셔너리
+              
         """
         if not self.splade_retriever:
             return {
@@ -258,11 +258,11 @@ class MultiMethodRetriever:
         
         start_time = time.time()
         try:
-            # SPLADE는 법령과 기준 검색을 지원
+            # SPLADE    
             law_results = self.splade_retriever.search_law_splade_optimized(query, top_k=top_k)
             criteria_results = self.splade_retriever.search_criteria_splade_optimized(query, top_k=top_k)
             
-            # 결과 통합 및 정규화
+            #    
             all_results = []
             for r in law_results:
                 normalized = self._normalize_result(r, 'splade', 'splade_score')
@@ -274,7 +274,7 @@ class MultiMethodRetriever:
                 normalized['source'] = 'criteria'
                 all_results.append(normalized)
             
-            # 점수 기준 정렬
+            #   
             all_results.sort(key=lambda x: x['score'], reverse=True)
             all_results = all_results[:top_k]
             
@@ -300,14 +300,14 @@ class MultiMethodRetriever:
     
     def search_hybrid(self, query: str, top_k: int = 10) -> Dict:
         """
-        Hybrid Search 검색
+        Hybrid Search 
         
         Args:
-            query: 검색 쿼리
-            top_k: 반환할 최대 결과 수
+            query:  
+            top_k:    
         
         Returns:
-            검색 결과 딕셔너리
+              
         """
         start_time = time.time()
         try:
@@ -317,10 +317,10 @@ class MultiMethodRetriever:
                 enable_reranking=True
             )
             
-            # UnifiedSearchResult를 딕셔너리로 변환
+            # UnifiedSearchResult  
             normalized_results = []
             for r in results:
-                # UnifiedSearchResult는 dataclass이므로 속성 직접 접근
+                # UnifiedSearchResult dataclass   
                 metadata = r.metadata if hasattr(r, 'metadata') else {}
                 
                 result_dict = {
@@ -365,16 +365,16 @@ class MultiMethodRetriever:
         methods: Optional[List[str]] = None
     ) -> Dict:
         """
-        모든 검색 방법을 실행하고 결과를 통합
+             
         
         Args:
-            query: 검색 쿼리
-            top_k: 각 방법별 반환할 최대 결과 수
-            methods: 실행할 검색 방법 리스트 (None이면 모두 실행)
-                    가능한 값: ['cosine', 'bm25', 'splade', 'hybrid']
+            query:  
+            top_k:      
+            methods:     (None  )
+                     : ['cosine', 'bm25', 'splade', 'hybrid']
         
         Returns:
-            모든 검색 방법의 결과를 포함한 딕셔너리
+                 
         """
         if methods is None:
             methods = ['cosine', 'bm25', 'splade', 'hybrid']
@@ -401,11 +401,11 @@ class MultiMethodRetriever:
         }
     
     def close(self):
-        """리소스 정리"""
+        """ """
         if self.vector_retriever:
             self.vector_retriever.close()
         if self.hybrid_retriever:
-            # HybridRetriever는 close 메서드가 없을 수 있음
+            # HybridRetriever close    
             pass
         if self.bm25_retriever and hasattr(self.bm25_retriever, 'conn'):
             if self.bm25_retriever.conn:

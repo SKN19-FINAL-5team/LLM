@@ -5,22 +5,22 @@ from sentence_transformers import SentenceTransformer
 import torch
 from typing import List
 
-# 1. 모델 로드 (GPU 사용)
+# 1.   (GPU )
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model = SentenceTransformer('nlpai-lab/KURE-v1', device=device)
 print(f"Model loaded on {device}")
 
-# 2. FastAPI 앱 생성
+# 2. FastAPI  
 app = FastAPI()
 
-# 3. 요청/응답 모델 정의
+# 3. /  
 class EmbedRequest(BaseModel):
     texts: List[str]
 
 class EmbedResponse(BaseModel):
     embeddings: List[List[float]]
 
-# 4. 임베딩 엔드포인트
+# 4.  
 @app.post("/embed", response_model=EmbedResponse)
 def embed_texts(request: EmbedRequest):
     try:

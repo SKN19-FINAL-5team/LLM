@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-임베딩 통합 도구
-임베딩 상태 확인, 로컬/원격 임베딩 생성 기능을 통합
+  
+  , /    
 
-사용법:
+:
     python backend/scripts/embedding/embedding_tool.py --check
     python backend/scripts/embedding/embedding_tool.py --generate-local
     python backend/scripts/embedding/embedding_tool.py --generate-remote
@@ -24,7 +24,7 @@ from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 from psycopg2.extras import RealDictCursor
 
-# 환경 변수 로드
+#   
 backend_dir = Path(__file__).parent.parent.parent
 env_file = backend_dir / '.env'
 if env_file.exists():
@@ -36,7 +36,7 @@ else:
     else:
         load_dotenv()
 
-# DB 연결 정보
+# DB  
 DB_CONFIG = {
     'host': os.getenv('DB_HOST', os.getenv('POSTGRES_HOST', 'localhost')),
     'port': int(os.getenv('DB_PORT', os.getenv('POSTGRES_PORT', 5432))),
@@ -47,53 +47,53 @@ DB_CONFIG = {
 
 
 class EmbeddingTool:
-    """임베딩 통합 도구"""
+    """  """
     
     def __init__(self):
         self.conn = None
         self._connect()
     
     def _connect(self):
-        """데이터베이스 연결"""
+        """ """
         try:
             self.conn = psycopg2.connect(**DB_CONFIG)
         except Exception as e:
-            print(f"❌ 데이터베이스 연결 실패: {e}")
+            print(f"   : {e}")
             raise
     
     def check_status(self):
-        """임베딩 상태 확인 (기존 check_embedding_status.py 기능)"""
+        """   ( check_embedding_status.py )"""
         cur = self.conn.cursor()
         
         print("=" * 70)
-        print("똑소리 프로젝트 - 청킹 및 임베딩 결과 확인")
+        print("  -     ")
         print("=" * 70)
         
-        # 1. 전체 통계
-        print("\n📊 전체 통계")
+        # 1.  
+        print("\n  ")
         print("-" * 70)
         
         cur.execute("SELECT COUNT(*) FROM documents")
         doc_count = cur.fetchone()[0]
-        print(f"총 문서 수: {doc_count:,}개")
+        print(f"  : {doc_count:,}")
         
         cur.execute("SELECT COUNT(*) FROM chunks")
         chunk_count = cur.fetchone()[0]
-        print(f"총 청크 수: {chunk_count:,}개")
+        print(f"  : {chunk_count:,}")
         
         cur.execute("SELECT COUNT(*) FROM chunks WHERE embedding IS NOT NULL")
         embedded_count = cur.fetchone()[0]
         embedding_rate = (embedded_count / chunk_count * 100) if chunk_count > 0 else 0
-        print(f"임베딩된 청크 수: {embedded_count:,}개")
-        print(f"임베딩 완료율: {embedding_rate:.2f}%")
+        print(f"  : {embedded_count:,}")
+        print(f" : {embedding_rate:.2f}%")
         
         if embedding_rate < 100:
-            print(f"⚠️  아직 {chunk_count - embedded_count:,}개 청크가 임베딩 대기 중입니다.")
+            print(f"   {chunk_count - embedded_count:,}    .")
         else:
-            print("✅ 모든 청크 임베딩 완료!")
+            print("    !")
         
-        # 2. 문서 유형별 통계
-        print("\n📁 문서 유형별 통계")
+        # 2.   
+        print("\n   ")
         print("-" * 70)
         cur.execute("""
             SELECT 
@@ -103,13 +103,13 @@ class EmbeddingTool:
             GROUP BY doc_type
             ORDER BY doc_type
         """)
-        print(f"{'문서 유형':<30} {'문서 수':>15}")
+        print(f"{' ':<30} {' ':>15}")
         print("-" * 70)
         for row in cur.fetchall():
-            print(f"{row[0]:<30} {row[1]:>15,}개")
+            print(f"{row[0]:<30} {row[1]:>15,}")
         
-        # 3. 청크 유형별 통계
-        print("\n🔖 청크 유형별 통계 (상위 10개)")
+        # 3.   
+        print("\n    ( 10)")
         print("-" * 70)
         cur.execute("""
             SELECT 
@@ -121,14 +121,14 @@ class EmbeddingTool:
             ORDER BY count DESC
             LIMIT 10
         """)
-        print(f"{'청크 유형':<30} {'청크 수':>15} {'평균 길이':>15}")
+        print(f"{' ':<30} {' ':>15} {' ':>15}")
         print("-" * 70)
         for row in cur.fetchall():
             chunk_type = row[0] if row[0] else '(null)'
-            print(f"{chunk_type:<30} {row[1]:>15,}개 {row[2]:>14.0f}자")
+            print(f"{chunk_type:<30} {row[1]:>15,} {row[2]:>14.0f}")
         
-        # 4. 청크 길이 분포
-        print("\n📏 청크 길이 분포")
+        # 4.   
+        print("\n   ")
         print("-" * 70)
         cur.execute("""
             SELECT 
@@ -140,15 +140,15 @@ class EmbeddingTool:
         """)
         row = cur.fetchone()
         if row and row[0] is not None:
-            print(f"최소 길이: {row[0]:,}자")
-            print(f"평균 길이: {row[1]:.0f}자")
-            print(f"중앙값: {row[2]:.0f}자")
-            print(f"최대 길이: {row[3]:,}자")
+            print(f" : {row[0]:,}")
+            print(f" : {row[1]:.0f}")
+            print(f": {row[2]:.0f}")
+            print(f" : {row[3]:,}")
         else:
-            print("데이터가 없습니다.")
+            print(" .")
         
-        # 5. 출처별 통계
-        print("\n🏢 출처별 통계")
+        # 5.  
+        print("\n  ")
         print("-" * 70)
         cur.execute("""
             SELECT 
@@ -160,14 +160,14 @@ class EmbeddingTool:
             GROUP BY source_org
             ORDER BY document_count DESC
         """)
-        print(f"{'출처':<30} {'문서 수':>15} {'청크 수':>15}")
+        print(f"{'':<30} {' ':>15} {' ':>15}")
         print("-" * 70)
         for row in cur.fetchall():
             source = row[0] if row[0] else '(null)'
-            print(f"{source:<30} {row[1]:>15,}개 {row[2]:>15,}개")
+            print(f"{source:<30} {row[1]:>15,} {row[2]:>15,}")
         
-        # 6. 임베딩 차원 확인
-        print("\n🔢 임베딩 벡터 정보")
+        # 6.   
+        print("\n   ")
         print("-" * 70)
         cur.execute("""
             SELECT DISTINCT 
@@ -180,12 +180,12 @@ class EmbeddingTool:
         rows = cur.fetchall()
         if rows:
             for row in rows:
-                print(f"모델: {row[0]}, 차원: {row[1]}")
+                print(f": {row[0]}, : {row[1]}")
         else:
-            print("임베딩된 청크가 없습니다.")
+            print("  .")
         
-        # 7. 샘플 청크 출력
-        print("\n📝 샘플 청크 (5개)")
+        # 7.   
+        print("\n   (5)")
         print("-" * 70)
         cur.execute("""
             SELECT 
@@ -202,59 +202,59 @@ class EmbeddingTool:
         """)
         for i, row in enumerate(cur.fetchall(), 1):
             print(f"\n[{i}] {row[0]}")
-            print(f"    문서 유형: {row[1]}")
-            print(f"    청크 타입: {row[2]}")
-            print(f"    길이: {row[3]:,}자")
-            print(f"    임베딩: {row[5]}")
-            print(f"    내용: {row[4]}...")
+            print(f"     : {row[1]}")
+            print(f"     : {row[2]}")
+            print(f"    : {row[3]:,}")
+            print(f"    : {row[5]}")
+            print(f"    : {row[4]}...")
         
-        # 8. 비정상 데이터 확인
-        print("\n⚠️  데이터 품질 확인")
+        # 8.   
+        print("\n    ")
         print("-" * 70)
         
-        # 너무 짧은 청크
+        #   
         cur.execute("SELECT COUNT(*) FROM chunks WHERE content_length < 10")
         short_chunks = cur.fetchone()[0]
         if short_chunks > 0:
-            print(f"⚠️  10자 미만 청크: {short_chunks:,}개")
+            print(f"  10  : {short_chunks:,}")
         else:
-            print("✅ 10자 미만 청크 없음")
+            print(" 10   ")
         
-        # 너무 긴 청크
+        #   
         cur.execute("SELECT COUNT(*) FROM chunks WHERE content_length > 5000")
         long_chunks = cur.fetchone()[0]
         if long_chunks > 0:
-            print(f"⚠️  5000자 초과 청크: {long_chunks:,}개")
+            print(f"  5000  : {long_chunks:,}")
         else:
-            print("✅ 5000자 초과 청크 없음")
+            print(" 5000   ")
         
-        # 임베딩 누락 청크
+        #   
         cur.execute("SELECT COUNT(*) FROM chunks WHERE embedding IS NULL")
         missing_embeddings = cur.fetchone()[0]
         if missing_embeddings > 0:
-            print(f"⚠️  임베딩 누락 청크: {missing_embeddings:,}개")
+            print(f"    : {missing_embeddings:,}")
         else:
-            print("✅ 모든 청크 임베딩 완료")
+            print("    ")
         
         print("\n" + "=" * 70)
-        print("확인 완료!")
+        print(" !")
         print("=" * 70)
         
         cur.close()
     
     def generate_local(self, batch_size=8, device='auto'):
-        """로컬에서 증분 임베딩 생성 (기존 generate_embeddings_incremental.py 기능)"""
+        """    ( generate_embeddings_incremental.py )"""
         start_time = datetime.now()
         
         print("=" * 80)
-        print("임베딩 생성 시작 (로컬, 증분 처리)")
+        print("   (,  )")
         print("=" * 80)
-        print(f"시작 시간: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f" : {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
         cur = self.conn.cursor()
         
-        # 임베딩 필요한 청크 가져오기
-        print("\n임베딩이 필요한 청크 조회 중...")
+        #    
+        print("\n    ...")
         cur.execute("""
             SELECT chunk_id, content, doc_id
             FROM chunks
@@ -263,14 +263,14 @@ class EmbeddingTool:
         """)
         
         chunks = cur.fetchall()
-        print(f"✅ {len(chunks):,}개 청크 발견")
+        print(f" {len(chunks):,}  ")
         
         if len(chunks) == 0:
-            print("\n🎉 모든 청크가 이미 임베딩되었습니다!")
+            print("\n    !")
             cur.close()
             return
         
-        # 문서 타입별 통계
+        #   
         cur.execute("""
             SELECT d.doc_type, COUNT(*) as count
             FROM chunks c
@@ -279,37 +279,37 @@ class EmbeddingTool:
             GROUP BY d.doc_type
             ORDER BY count DESC
         """)
-        print("\n문서 타입별 임베딩 필요:")
+        print("\n   :")
         for doc_type, count in cur.fetchall():
-            print(f"  - {doc_type}: {count:,}개")
+            print(f"  - {doc_type}: {count:,}")
         
-        # 모델 로드
-        print("\n모델 로드 중...")
+        #  
+        print("\n  ...")
         if device == 'auto':
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
             device = torch.device(device)
         
-        print(f"  디바이스: {device}")
+        print(f"  : {device}")
         
         if device.type == 'cuda':
-            print(f"  GPU 이름: {torch.cuda.get_device_name(0)}")
-            print(f"  GPU 메모리: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+            print(f"  GPU : {torch.cuda.get_device_name(0)}")
+            print(f"  GPU : {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
         
         model_name = 'nlpai-lab/KURE-v1'
-        print(f"  모델: {model_name}")
+        print(f"  : {model_name}")
         
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_name)
             model = AutoModel.from_pretrained(model_name).to(device)
             model.eval()
-            print("✅ 모델 로드 완료")
+            print("   ")
         except Exception as e:
-            print(f"❌ 모델 로드 실패: {e}")
+            print(f"   : {e}")
             cur.close()
             return
         
-        # 배치 크기 자동 설정
+        #    
         if device.type == 'cuda':
             gpu_memory_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
             if gpu_memory_gb >= 16:
@@ -321,19 +321,19 @@ class EmbeddingTool:
         else:
             batch_size = max(batch_size, 4)
         
-        print(f"  배치 크기: {batch_size}")
+        print(f"   : {batch_size}")
         
-        # 임베딩 생성
-        print(f"\n임베딩 생성 중... (총 {len(chunks):,}개)")
+        #  
+        print(f"\n  ... ( {len(chunks):,})")
         chunk_ids = [c[0] for c in chunks]
         contents = [c[1] for c in chunks]
         
         embeddings = self._generate_embeddings_local(contents, model, tokenizer, device, batch_size)
         
-        print(f"\n✅ 임베딩 생성 완료: {len(embeddings):,}개")
+        print(f"\n   : {len(embeddings):,}")
         
-        # DB 업데이트
-        print("\nDB 업데이트 중...")
+        # DB 
+        print("\nDB  ...")
         updated = 0
         commit_interval = 100
         
@@ -347,20 +347,20 @@ class EmbeddingTool:
                 
                 updated += 1
                 
-                # 주기적 커밋
+                #  
                 if idx % commit_interval == 0:
                     self.conn.commit()
                     progress = (idx / len(chunk_ids)) * 100
-                    print(f"  진행률: {idx:,}/{len(chunk_ids):,} ({progress:.1f}%) - 커밋 완료")
+                    print(f"  : {idx:,}/{len(chunk_ids):,} ({progress:.1f}%) -  ")
             
             except Exception as e:
-                print(f"\n⚠️  청크 {chunk_id} 업데이트 실패: {e}")
+                print(f"\n   {chunk_id}  : {e}")
         
-        # 최종 커밋
+        #  
         self.conn.commit()
-        print(f"✅ DB 업데이트 완료: {updated:,}개 청크")
+        print(f" DB  : {updated:,} ")
         
-        # 검증
+        # 
         end_time = datetime.now()
         duration = end_time - start_time
         
@@ -379,29 +379,29 @@ class EmbeddingTool:
         total = cur.fetchone()[0]
         
         print("\n" + "=" * 80)
-        print("임베딩 생성 완료")
+        print("  ")
         print("=" * 80)
-        print(f"  - 시작 시간: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"  - 종료 시간: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"  - 소요 시간: {duration}")
-        print(f"  - 생성된 임베딩: {len(embeddings):,}개")
-        print(f"  - 업데이트된 청크: {updated:,}개")
-        print(f"  - 남은 청크: {remaining:,}개")
-        print(f"  - 전체 청크: {total:,}개")
-        print(f"  - 임베딩 커버리지: {((total - remaining) / total * 100):.1f}%")
+        print(f"  -  : {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"  -  : {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"  -  : {duration}")
+        print(f"  -  : {len(embeddings):,}")
+        print(f"  -  : {updated:,}")
+        print(f"  -  : {remaining:,}")
+        print(f"  -  : {total:,}")
+        print(f"  -  : {((total - remaining) / total * 100):.1f}%")
         
         if remaining == 0:
-            print("\n🎉 모든 청크에 임베딩이 생성되었습니다!")
+            print("\n    !")
         else:
-            print(f"\n⚠️  {remaining:,}개 청크가 아직 임베딩되지 않았습니다.")
+            print(f"\n  {remaining:,}    .")
         
         cur.close()
     
     def _generate_embeddings_local(self, texts, model, tokenizer, device, batch_size=8):
-        """로컬에서 배치 임베딩 생성"""
+        """   """
         embeddings = []
         
-        for i in tqdm(range(0, len(texts), batch_size), desc="임베딩 생성", unit="batch"):
+        for i in tqdm(range(0, len(texts), batch_size), desc=" ", unit="batch"):
             batch = texts[i:i+batch_size]
             
             try:
@@ -420,8 +420,8 @@ class EmbeddingTool:
                 embeddings.extend(batch_embeddings)
             
             except Exception as e:
-                print(f"\n⚠️  배치 {i//batch_size + 1} 처리 중 오류: {e}")
-                # 개별 처리로 fallback
+                print(f"\n   {i//batch_size + 1}   : {e}")
+                #   fallback
                 for text in batch:
                     try:
                         inputs = tokenizer(
@@ -438,42 +438,42 @@ class EmbeddingTool:
                         
                         embeddings.append(embedding)
                     except Exception as e2:
-                        print(f"  개별 처리도 실패: {e2}")
+                        print(f"    : {e2}")
                         embeddings.append(torch.zeros(1024).numpy())
         
         return embeddings
     
     def generate_remote(self, api_url=None, batch_size=32):
-        """원격 API로 임베딩 생성 (기존 embed_existing_chunks.py 기능)"""
+        """ API   ( embed_existing_chunks.py )"""
         if api_url is None:
             api_url = os.getenv('EMBED_API_URL', 'http://localhost:8001/embed')
         
         print("=" * 80)
-        print("🚀 증분 임베딩 생성 (원격 API 방식)")
+        print("    ( API )")
         print("=" * 80)
         print(f"API URL: {api_url}")
         
-        # API 연결 테스트
-        print(f"\n🔌 임베딩 API 연결 테스트: {api_url}")
+        # API  
+        print(f"\n  API  : {api_url}")
         try:
             base_url = api_url.rsplit('/', 1)[0]
             response = requests.get(base_url, timeout=10)
             response.raise_for_status()
-            print(f"✅ API 연결 성공")
+            print(f" API  ")
         except requests.exceptions.RequestException as e:
-            print(f"❌ API 연결 실패: {e}")
-            print("\n다음 단계를 확인하세요:")
-            print("1. RunPod에서 임베딩 서버 실행:")
+            print(f" API  : {e}")
+            print("\n  :")
+            print("1. RunPod   :")
             print("   ssh root@[IP] -p [PORT]")
             print("   uvicorn runpod_embed_server:app --host 0.0.0.0 --port 8000")
-            print("\n2. 로컬에서 SSH 터널 열기:")
+            print("\n2.  SSH  :")
             print("   ssh -L 8001:localhost:8000 root@[IP] -p [PORT] -N &")
             return
         
         cur = self.conn.cursor(cursor_factory=RealDictCursor)
         
-        # 임베딩 필요한 청크 조회
-        print("\n🔍 임베딩이 필요한 청크 조회 중...")
+        #    
+        print("\n     ...")
         cur.execute("""
             SELECT chunk_id, content, doc_id
             FROM chunks
@@ -485,15 +485,15 @@ class EmbeddingTool:
         """)
         
         chunks = cur.fetchall()
-        print(f"✅ {len(chunks):,}개 청크 발견")
+        print(f" {len(chunks):,}  ")
         
         if not chunks:
-            print("\n✅ 모든 청크가 이미 임베딩되었습니다!")
+            print("\n    !")
             self._verify_result(cur)
             cur.close()
             return
         
-        # 문서 타입별 통계
+        #   
         cur.execute("""
             SELECT d.doc_type, COUNT(*) as count
             FROM chunks c
@@ -505,13 +505,13 @@ class EmbeddingTool:
             ORDER BY count DESC
         """)
         
-        print("\n문서 타입별:")
+        print("\n :")
         for row in cur.fetchall():
-            print(f"  - {row['doc_type']}: {row['count']:,}개")
+            print(f"  - {row['doc_type']}: {row['count']:,}")
         
-        # 임베딩 생성
-        print(f"\n🔮 임베딩 생성 시작: {len(chunks):,}개 청크")
-        print(f"  배치 크기: {batch_size}")
+        #  
+        print(f"\n   : {len(chunks):,} ")
+        print(f"   : {batch_size}")
         
         start_time = datetime.now()
         stats = {
@@ -521,13 +521,13 @@ class EmbeddingTool:
         
         cur2 = self.conn.cursor()
         
-        for i in tqdm(range(0, len(chunks), batch_size), desc="임베딩 생성"):
+        for i in tqdm(range(0, len(chunks), batch_size), desc=" "):
             batch = chunks[i:i + batch_size]
             chunk_ids = [c['chunk_id'] for c in batch]
             texts = [c['content'] for c in batch]
             
             try:
-                # 임베딩 생성
+                #  
                 response = requests.post(
                     api_url,
                     json={"texts": texts},
@@ -536,7 +536,7 @@ class EmbeddingTool:
                 response.raise_for_status()
                 embeddings = response.json()['embeddings']
                 
-                # DB 업데이트
+                # DB 
                 update_query = """
                     UPDATE chunks
                     SET embedding = %s::vector,
@@ -551,38 +551,38 @@ class EmbeddingTool:
                 stats['chunks_embedded'] += len(batch)
             
             except Exception as e:
-                error_msg = f"배치 {i//batch_size + 1} 실패: {e}"
-                print(f"\n❌ {error_msg}")
+                error_msg = f" {i//batch_size + 1} : {e}"
+                print(f"\n {error_msg}")
                 stats['errors'].append(error_msg)
                 self.conn.rollback()
         
         end_time = datetime.now()
         duration = end_time - start_time
         
-        print(f"\n✅ 임베딩 생성 완료!")
-        print(f"  - 처리된 청크: {stats['chunks_embedded']:,}개")
-        print(f"  - 소요 시간: {duration}")
+        print(f"\n   !")
+        print(f"  -  : {stats['chunks_embedded']:,}")
+        print(f"  -  : {duration}")
         if duration.total_seconds() > 0:
-            print(f"  - 평균 속도: {stats['chunks_embedded'] / duration.total_seconds():.1f} 청크/초")
+            print(f"  -  : {stats['chunks_embedded'] / duration.total_seconds():.1f} /")
         
-        # 결과 검증
+        #  
         self._verify_result(cur)
         
-        # 오류 요약
+        #  
         if stats['errors']:
-            print(f"\n⚠️  오류 발생: {len(stats['errors'])}개")
+            print(f"\n   : {len(stats['errors'])}")
             for error in stats['errors'][:5]:
                 print(f"  - {error}")
             if len(stats['errors']) > 5:
-                print(f"  ... 외 {len(stats['errors']) - 5}개")
+                print(f"  ...  {len(stats['errors']) - 5}")
         
         cur.close()
         cur2.close()
     
     def _verify_result(self, cur):
-        """결과 검증"""
+        """ """
         print("\n" + "=" * 80)
-        print("🔍 결과 검증")
+        print("  ")
         print("=" * 80)
         
         cur.execute("""
@@ -595,21 +595,21 @@ class EmbeddingTool:
         """)
         stats = cur.fetchone()
         
-        print(f"\n📦 전체 청크:")
-        print(f"  전체:         {stats['total']:,}개")
-        print(f"  임베딩 완료:  {stats['embedded']:,}개")
-        print(f"  임베딩 대기:  {stats['not_embedded']:,}개")
+        print(f"\n  :")
+        print(f"  :         {stats['total']:,}")
+        print(f"   :  {stats['embedded']:,}")
+        print(f"   :  {stats['not_embedded']:,}")
         
         if stats['total'] > 0:
             coverage = (stats['embedded'] / stats['total']) * 100
-            print(f"  커버리지:     {coverage:.1f}%")
+            print(f"  :     {coverage:.1f}%")
             
             if stats['not_embedded'] == 0:
-                print("\n🎉 모든 청크에 임베딩이 생성되었습니다!")
+                print("\n    !")
             else:
-                print(f"\n⚠️  {stats['not_embedded']:,}개 청크가 아직 임베딩되지 않았습니다.")
+                print(f"\n  {stats['not_embedded']:,}    .")
         
-        # 문서 타입별 통계
+        #   
         cur.execute("""
             SELECT 
                 d.doc_type,
@@ -622,49 +622,49 @@ class EmbeddingTool:
             ORDER BY total DESC
         """)
         
-        print(f"\n📊 문서 타입별:")
+        print(f"\n  :")
         for row in cur.fetchall():
             coverage = (row['embedded'] / row['total']) * 100 if row['total'] > 0 else 0
-            status = "✅" if coverage == 100 else "⚠️"
+            status = "" if coverage == 100 else ""
             print(f"  {status} {row['doc_type']:<30} {row['embedded']:>6}/{row['total']:<6} ({coverage:>5.1f}%)")
     
     def close(self):
-        """연결 종료"""
+        """ """
         if self.conn:
             self.conn.close()
 
 
 def main():
-    """메인 실행 함수"""
+    """  """
     parser = argparse.ArgumentParser(
-        description='임베딩 통합 도구',
+        description='  ',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-사용 예시:
-  python embedding_tool.py --check                    # 임베딩 상태 확인
-  python embedding_tool.py --generate-local            # 로컬에서 임베딩 생성
-  python embedding_tool.py --generate-local --batch-size 16  # 배치 크기 지정
-  python embedding_tool.py --generate-remote           # 원격 API로 임베딩 생성
+ :
+  python embedding_tool.py --check                    #   
+  python embedding_tool.py --generate-local            #   
+  python embedding_tool.py --generate-local --batch-size 16  #   
+  python embedding_tool.py --generate-remote           #  API  
   python embedding_tool.py --generate-remote --api-url http://localhost:8001/embed
         """
     )
     
     parser.add_argument('--check', action='store_true',
-                       help='임베딩 상태 확인')
+                       help='  ')
     parser.add_argument('--generate-local', action='store_true',
-                       help='로컬에서 증분 임베딩 생성')
+                       help='   ')
     parser.add_argument('--generate-remote', action='store_true',
-                       help='원격 API로 임베딩 생성')
+                       help=' API  ')
     parser.add_argument('--batch-size', type=int, default=8,
-                       help='배치 크기 (기본값: 8)')
+                       help='  (: 8)')
     parser.add_argument('--device', type=str, default='auto',
-                       help='디바이스 (cuda/cpu/auto, 기본값: auto)')
+                       help=' (cuda/cpu/auto, : auto)')
     parser.add_argument('--api-url', type=str, default=None,
-                       help='원격 API URL (기본값: EMBED_API_URL 환경 변수 또는 http://localhost:8001/embed)')
+                       help=' API URL (: EMBED_API_URL    http://localhost:8001/embed)')
     
     args = parser.parse_args()
     
-    # 아무 옵션도 없으면 도움말 출력
+    #     
     if not any([args.check, args.generate_local, args.generate_remote]):
         parser.print_help()
         return
@@ -680,9 +680,9 @@ def main():
             tool.generate_remote(api_url=args.api_url, batch_size=args.batch_size)
     
     except KeyboardInterrupt:
-        print("\n\n⚠️  사용자에 의해 중단되었습니다.")
+        print("\n\n    .")
     except Exception as e:
-        print(f"\n❌ 오류 발생: {e}")
+        print(f"\n  : {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
