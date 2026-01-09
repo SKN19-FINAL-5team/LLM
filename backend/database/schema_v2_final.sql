@@ -54,7 +54,6 @@ CREATE TABLE chunks (
     content TEXT NOT NULL,
     content_length INTEGER,
     embedding vector(1024),  -- KURE-v1 차원 (1024)
-    embedding_model VARCHAR(50) DEFAULT 'KURE-v1',
     drop BOOLEAN DEFAULT FALSE,  -- 삭제 플래그 (검색에서 제외할 청크)
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
