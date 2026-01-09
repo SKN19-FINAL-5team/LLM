@@ -39,14 +39,14 @@ Vector DB에서 유사한 청크를 검색하는 모듈입니다.
 
 ### 3. 테스트 스크립트
 
-#### `test/integration/test_rag.py`
+#### `tests/integration/test_rag.py`
 RAG 시스템의 핵심 기능을 직접 테스트합니다.
 
 - `test_retriever()`: Vector DB 검색 기능 테스트 (API 키 불필요)
 - `test_generator()`: LLM 답변 생성 기능 테스트 (API 키 필요)
 - `test_full_pipeline()`: 전체 RAG 파이프라인 테스트 (API 키 필요)
 
-#### `test/unit/test_api.py`
+#### `tests/unit/test_api.py`
 FastAPI 서버가 실행 중일 때 HTTP API를 테스트합니다.
 
 - `test_health()`: 헬스 체크

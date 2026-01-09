@@ -14,8 +14,10 @@ from dotenv import load_dotenv
 from datetime import datetime
 import json
 
-# 프로젝트 루트를 Python 경로에 추가
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+# 프로젝트 루트와 backend 디렉토리를 Python 경로에 추가
+project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+sys.path.insert(0, project_root)
+sys.path.insert(0, os.path.join(project_root, 'backend'))
 
 from app.rag import MultiStageRetriever
 
