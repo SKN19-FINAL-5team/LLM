@@ -365,4 +365,4 @@ if __name__ == "__main__":
         print(f"✅ Encoded (shape: {query_vec.shape}, non-zero: {np.count_nonzero(query_vec)})")
     else:
         print("❌ SPLADE API 서버 연결 실패")
-        print("   SSH 터널을 확인하세요: ssh -L 8002:localhost:8000 [user]@[host] -p [port]")
+        print("SSH 터널을 확인하세요: ssh -L 8002:localhost:8000 [user]@[host] -p [port]")
