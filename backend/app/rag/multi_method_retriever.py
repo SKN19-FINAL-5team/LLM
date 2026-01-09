@@ -159,20 +159,56 @@ class MultiMethodRetriever:
         
         start_time = time.time()
         try:
-            # BM25는 법령과 기준 검색을 지원
+            # BM25는 법령, 기준, 사례 검색을 지원
             law_results = self.bm25_retriever.search_law_bm25(query, top_k=top_k)
             criteria_results = self.bm25_retriever.search_criteria_bm25(query, top_k=top_k)
             
+            # 사례 검색 (분쟁조정 + 피해구제)
+            mediation_results = []
+            counsel_results = []
+            if hasattr(self.bm25_retriever, 'search_mediation_bm25'):
+                try:
+                    mediation_results = self.bm25_retriever.search_mediation_bm25(query, top_k=top_k)
+                except Exception as e:
+                    print(f"⚠️  Mediation BM25 검색 실패: {e}")
+            
+            if hasattr(self.bm25_retriever, 'search_counsel_bm25'):
+                try:
+                    counsel_results = self.bm25_retriever.search_counsel_bm25(query, top_k=top_k)
+                except Exception as e:
+                    print(f"⚠️  Counsel BM25 검색 실패: {e}")
+            
             # 결과 통합 및 정규화
             all_results = []
+            
+            # 법령 결과
             for r in law_results:
                 normalized = self._normalize_result(r, 'bm25', 'bm25_score')
                 normalized['source'] = 'law'
                 all_results.append(normalized)
             
+            # 기준 결과
             for r in criteria_results:
                 normalized = self._normalize_result(r, 'bm25', 'bm25_score')
                 normalized['source'] = 'criteria'
+                all_results.append(normalized)
+            
+            # 분쟁조정 사례 결과
+            for r in mediation_results:
+                normalized = self._normalize_result(r, 'bm25', 'bm25_score')
+                normalized['source'] = 'mediation_case'
+                normalized['case_no'] = r.get('case_no', '')
+                normalized['decision_date'] = r.get('decision_date', '')
+                normalized['agency'] = r.get('agency', '')
+                all_results.append(normalized)
+            
+            # 피해구제 사례 결과
+            for r in counsel_results:
+                normalized = self._normalize_result(r, 'bm25', 'bm25_score')
+                normalized['source'] = 'counsel_case'
+                normalized['case_no'] = r.get('case_no', '')
+                normalized['decision_date'] = r.get('decision_date', '')
+                normalized['agency'] = r.get('agency', '')
                 all_results.append(normalized)
             
             # 점수 기준 정렬
