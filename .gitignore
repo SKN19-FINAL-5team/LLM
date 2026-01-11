@@ -66,6 +66,10 @@ backend/data/dispute/
 backend/data/law/raw
 
 
+# Backup Data
+backup.sql
+
+
 # Agents
 Agents
 .agent
