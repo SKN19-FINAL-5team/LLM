@@ -5,6 +5,7 @@
 """
 
 import psycopg2
+import time
 from typing import List, Dict, Optional, Tuple
 import requests
 from dataclasses import dataclass
@@ -82,7 +83,105 @@ class RAGRetriever:
             return embeddings[0]
         except requests.exceptions.RequestException as e:
             raise Exception(f"임베딩 API 오류: {e}")
-    
+
+    def embed_query_timed(self, query: str) -> Tuple[List[float], float]:
+        """
+        쿼리 임베딩 생성 with timing
+
+        Returns:
+            Tuple of (embedding_vector, time_ms)
+        """
+        start = time.time()
+        embedding = self.embed_query(query)
+        time_ms = (time.time() - start) * 1000
+        return embedding, time_ms
+
+    def vector_search_instrumented(
+        self,
+        query: str,
+        top_k: int = 10,
+        doc_type_filter: Optional[str] = None,
+        chunk_type_filter: Optional[str] = None
+    ) -> Dict:
+        """
+        벡터 유사도 검색 with timing info
+
+        Returns:
+            {
+                'results': List[SearchResult],
+                'embedding_time_ms': float,
+                'search_time_ms': float
+            }
+        """
+        # Embedding with timing
+        query_embedding, embed_time = self.embed_query_timed(query)
+
+        # Search with timing
+        search_start = time.time()
+
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    c.chunk_id,
+                    c.doc_id,
+                    c.chunk_type,
+                    c.content,
+                    d.title AS doc_title,
+                    d.doc_type,
+                    d.category_path,
+                    1 - (c.embedding <=> %s::vector) AS similarity,
+                    d.source_org,
+                    d.url,
+                    d.collected_at,
+                    d.metadata
+                FROM chunks c
+                JOIN documents d ON c.doc_id = d.doc_id
+                WHERE
+                    c.embedding IS NOT NULL
+                    AND (%s IS NULL OR d.doc_type = %s)
+                    AND (%s IS NULL OR c.chunk_type = %s)
+                ORDER BY c.embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (
+                    query_embedding,
+                    doc_type_filter, doc_type_filter,
+                    chunk_type_filter, chunk_type_filter,
+                    query_embedding,
+                    top_k
+                )
+            )
+
+            results = []
+            for row in cur.fetchall():
+                metadata_json = row[11] if len(row) > 11 and row[11] else {}
+                decision_date = metadata_json.get('decision_date') if isinstance(metadata_json, dict) else None
+
+                results.append(SearchResult(
+                    chunk_id=row[0],
+                    doc_id=row[1],
+                    chunk_type=row[2],
+                    content=row[3],
+                    doc_title=row[4],
+                    doc_type=row[5],
+                    category_path=row[6] or [],
+                    similarity=float(row[7]),
+                    source_org=row[8],
+                    url=row[9],
+                    collected_at=row[10].isoformat() if row[10] else None,
+                    decision_date=decision_date,
+                    metadata=metadata_json
+                ))
+
+        search_time = (time.time() - search_start) * 1000
+
+        return {
+            'results': results,
+            'embedding_time_ms': embed_time,
+            'search_time_ms': search_time
+        }
+
     def vector_search(
         self,
         query: str,
