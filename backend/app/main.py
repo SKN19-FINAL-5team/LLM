@@ -1,13 +1,15 @@
 import os
+import time
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any, Generator
 from dotenv import load_dotenv
-from fastmcp import FastMCP
+# from fastmcp import FastMCP
 
 from rag import RAGRetriever, HybridRetriever, RAGGenerator, SearchResult
+from rag.logger import get_rag_logger
 from utils.embedding_connection import get_embedding_api_url
 
 # 환경 변수 로드
@@ -46,6 +48,7 @@ os.environ['EMBED_API_URL'] = embed_api_url
 retrieval_mode = os.getenv('RETRIEVAL_MODE', 'dense')  # 'hybrid', 'dense'
 
 generator = RAGGenerator()
+rag_logger = get_rag_logger()
 
 
 # Dependency for Retriever
@@ -183,20 +186,78 @@ async def chat(
     """
     RAG 기반 챗봇 응답 생성
     """
+    start_time = time.time()
+    log_entry = rag_logger.create_entry(query=request.message)
+
     try:
-        # 1. 유사 청크 검색
-        if hasattr(retriever, 'search') and retrieval_mode == 'hybrid':
-            chunks = retriever.search(
+        # 1. 유사 청크 검색 (instrumented)
+        if retrieval_mode == 'hybrid' and hasattr(retriever, 'search_instrumented'):
+            search_result = retriever.search_instrumented(
                 query=request.message,
                 top_k=request.top_k
             )
-        else:
-            chunks = retriever.vector_search(
+            chunks = search_result['results']
+            chunks_dict = [_serialize_search_result(c) for c in chunks]
+
+            rag_logger.log_retrieval(
+                entry=log_entry,
+                mode='hybrid',
+                top_k=request.top_k,
+                embedding_time_ms=search_result['embedding_time_ms'],
+                search_time_ms=search_result['search_time_ms'],
+                chunks=chunks_dict,
+                dense_candidates=search_result.get('dense_candidates', 0),
+                lexical_candidates=search_result.get('lexical_candidates', 0)
+            )
+        elif hasattr(retriever, 'vector_search_instrumented'):
+            search_result = retriever.vector_search_instrumented(
                 query=request.message,
                 top_k=request.top_k
+            )
+            chunks = search_result['results']
+            chunks_dict = [_serialize_search_result(c) for c in chunks]
+
+            rag_logger.log_retrieval(
+                entry=log_entry,
+                mode='dense',
+                top_k=request.top_k,
+                embedding_time_ms=search_result['embedding_time_ms'],
+                search_time_ms=search_result['search_time_ms'],
+                chunks=chunks_dict
+            )
+        else:
+            # Fallback to non-instrumented
+            if hasattr(retriever, 'search') and retrieval_mode == 'hybrid':
+                chunks = retriever.search(
+                    query=request.message,
+                    top_k=request.top_k
+                )
+            else:
+                chunks = retriever.vector_search(
+                    query=request.message,
+                    top_k=request.top_k
+                )
+            chunks_dict = [_serialize_search_result(c) for c in chunks]
+            rag_logger.log_retrieval(
+                entry=log_entry,
+                mode=retrieval_mode,
+                top_k=request.top_k,
+                embedding_time_ms=0,
+                search_time_ms=0,
+                chunks=chunks_dict
             )
 
         if not chunks:
+            rag_logger.log_response(
+                entry=log_entry,
+                answer="",
+                chunks_used=0,
+                sources_count=0,
+                status="no_results"
+            )
+            rag_logger.finalize(log_entry, start_time)
+            rag_logger.save(log_entry)
+
             return ChatResponse(
                 answer="죄송합니다. 관련된 분쟁조정 사례를 찾을 수 없습니다. 다른 질문을 해주시겠어요?",
                 chunks_used=0,
@@ -204,16 +265,38 @@ async def chat(
                 sources=[]
             )
 
-        # 2. SearchResult를 dict로 변환 (generator 입력용)
-        chunks_dict = [_serialize_search_result(chunk) for chunk in chunks]
+        # 2. LLM으로 답변 생성 (instrumented)
+        if hasattr(generator, 'generate_answer_instrumented'):
+            result = generator.generate_answer_instrumented(
+                query=request.message,
+                chunks=chunks_dict
+            )
 
-        # 3. LLM으로 답변 생성
-        result = generator.generate_answer(
-            query=request.message,
-            chunks=chunks_dict
-        )
+            rag_logger.log_llm(
+                entry=log_entry,
+                model=result['model'],
+                system_prompt=result.get('system_prompt', ''),
+                user_prompt=result.get('user_prompt', ''),
+                response_time_ms=result.get('response_time_ms', 0),
+                prompt_tokens=result.get('prompt_tokens', 0),
+                completion_tokens=result.get('completion_tokens', 0),
+                has_sufficient_evidence=result.get('has_sufficient_evidence', True),
+                clarifying_questions=result.get('clarifying_questions', [])
+            )
+        else:
+            result = generator.generate_answer(
+                query=request.message,
+                chunks=chunks_dict
+            )
+            rag_logger.log_llm(
+                entry=log_entry,
+                model=result['model'],
+                system_prompt='',
+                user_prompt='',
+                response_time_ms=0
+            )
 
-        # 4. 응답 포맷팅 (S1-1 correct field mapping)
+        # 3. 응답 포맷팅 (S1-1 correct field mapping)
         sources = [
             {
                 'doc_id': chunk.doc_id,
@@ -229,6 +312,18 @@ async def chat(
             for chunk in chunks
         ]
 
+        # Log response
+        rag_logger.log_response(
+            entry=log_entry,
+            answer=result['answer'],
+            chunks_used=result['chunks_used'],
+            sources_count=len(sources),
+            status="success"
+        )
+
+        rag_logger.finalize(log_entry, start_time)
+        rag_logger.save(log_entry)
+
         return ChatResponse(
             answer=result['answer'],
             chunks_used=result['chunks_used'],
@@ -239,6 +334,17 @@ async def chat(
         )
 
     except Exception as e:
+        rag_logger.log_response(
+            entry=log_entry,
+            answer="",
+            chunks_used=0,
+            sources_count=0,
+            status="error",
+            error_message=str(e)
+        )
+        rag_logger.finalize(log_entry, start_time)
+        rag_logger.save(log_entry)
+
         raise HTTPException(status_code=500, detail=f"답변 생성 중 오류 발생: {str(e)}")
 
 
@@ -311,7 +417,7 @@ async def get_case(
         raise HTTPException(status_code=500, detail=f"사례 조회 중 오류 발생: {str(e)}")
 
 
-mcp = FastMCP.from_fastapi(app)
+# mcp = FastMCP.from_fastapi(app)
 
-if __name__ == "__main__":
-    mcp.run()
+# if __name__ == "__main__":
+#     mcp.run()
