@@ -3,6 +3,7 @@
 본 문서는 '똑소리' 프로젝트의 **데이터 관리, 인프라 구조, Multi-Agent System (MAS)** 설계를 시각화한 자료입니다.
 
 ## 1. 데이터 관리 파이프라인 (Data Pipeline)
+
 법령(API), 상담사례(Web), 분쟁조정사례/기준(PDF)의 수집 및 가공 흐름입니다.
 
 ```mermaid
@@ -73,42 +74,84 @@ flowchart TD
 ```
 
 ## 2. Frontend - Backend 인프라 구조
+
 오케스트레이터의 라우팅 모델(Small LLM)과 검색 모델(SPLADE)을 활용하는 하이브리드 인프라입니다.
 
 ```mermaid
 graph TB
-    %% 노드 스타일
+    %% 스타일 정의
     classDef user fill:#ffffff,stroke:#333,stroke-width:2px;
-    classDef aws fill:#FF9900,stroke:#232F3E,color:white;
-    classDef runpod fill:#7B68EE,stroke:#333,color:white;
-    classDef external fill:#cccccc,stroke:#333,stroke-dasharray: 5 5;
+    classDef frontend fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef backend fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef agent fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#333;
+    classDef resource fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5;
 
-    User(["사용자 Client"]):::user
-
-    subgraph AWS_EC2 [AWS EC2 Instance]
-        Nginx["Nginx Reverse Proxy"]
-        BE["Backend API Container - FastAPI"]
-    end
-
-    subgraph RunPod [RunPod GPU Cloud]
-        OrchModel["Small LLM Server - Llama 3.1 8B Qwen 2.5 - Router Supervisor"]:::runpod
-        RAGModel["Retrieval Model Server - SPLADE Cross Encoder"]:::runpod
-    end
-
-    subgraph External_API [상용 LLM API]
-        BigLLM["GPT 4o Claude 3.5 - Gen Review"]:::external
-    end
-
-    User --> Nginx --> BE
+    %% 1. 사용자 및 프론트엔드
+    User([사용자 User]):::user
     
-    %% 로직 흐름
-    BE <-->|1. 판단 라우팅| OrchModel
-    BE <-->|2-A. 일상대화| OrchModel
-    BE <-->|2-B. 검색 리랭킹| RAGModel
-    BE <-->|3. 전문답변 검토| BigLLM
+    subgraph Frontend_Layer [Frontend Layer]
+        Browser["Chrome Browser (Client)"]:::frontend
+        ReactApp["React / Vite App"]:::frontend
+    end
+
+    %% 2. 백엔드 인프라 (에러 수정 지점)
+    subgraph Backend_Infrastructure [Backend Server - EC2]
+        Nginx["Nginx Reverse Proxy"]:::backend
+        Uvicorn["Uvicorn ASGI Server"]:::backend
+        FastAPI["FastAPI App Container"]:::backend
+        
+        %% 3. LangGraph 논리적 아키텍처
+        subgraph LangGraph_System [LangGraph MAS]
+            direction TB
+            OrchAgent["Orchestrator Agent<br/>(Supervisor)"]:::agent
+            
+            RouterAgent["질의 분석 에이전트<br/>(Intent Analysis)"]:::agent
+            RetrieverAgent["검색 에이전트<br/>(RAG Pipeline)"]:::agent
+            GeneratorAgent["답변 생성 에이전트<br/>(Answer Draft)"]:::agent
+            ReviewerAgent["답변 검토 에이전트<br/>(Answer Check)"]:::agent
+            
+            %% Agent 연결
+            OrchAgent -- "1. 의도파악" --> RouterAgent
+            OrchAgent -- "2. 검색요청" --> RetrieverAgent
+            OrchAgent -- "3. 답변생성" --> GeneratorAgent
+            OrchAgent -- "4. 검토요청" --> ReviewerAgent
+            
+            %% Feedback Loops
+            RouterAgent -.->|"결과반환"| OrchAgent
+            RetrieverAgent -.->|"Context"| OrchAgent
+            GeneratorAgent -.->|"Draft"| OrchAgent
+            ReviewerAgent -.->|"Approved"| OrchAgent
+        end
+    end
+
+    %% 4. 외부 리소스 및 모델
+    subgraph External_Resources [Model & Data Resources]
+        SmallLLM["RunPod: Small LLM<br/>(Llama 3 8B / Qwen 2.5)"]:::resource
+        SpladeModel["RunPod: SPLADE<br/>(Sparse Embedding)"]:::resource
+        BigLLM["API: Big LLM<br/>(GPT-4o)"]:::resource
+        VectorDB[("PostgreSQL<br/>pgvector")]:::resource
+    end
+
+    %% 흐름 연결
+    User --> Browser
+    Browser --> ReactApp
+    ReactApp -->|"REST API"| Nginx
+    Nginx -->|"Proxy Pass"| Uvicorn
+    Uvicorn -->|"ASGI"| FastAPI
+    FastAPI -->|"Request"| OrchAgent
+    OrchAgent -->|"Response"| FastAPI
+
+    %% 리소스 사용 관계
+    RouterAgent -.->|"API Call"| SmallLLM
+    RetrieverAgent -.->|"Embedding"| SpladeModel
+    RetrieverAgent -.->|"Query"| VectorDB
+    GeneratorAgent -.->|"Prompt"| BigLLM
+    ReviewerAgent -.->|"Review"| BigLLM
+
 ```
 
 ## 3. Backend MAS (Multi-Agent System) 상세 로직
+
 오케스트레이터가 Small Model을 사용하여 능동적으로 라우팅(일상대화 vs 전문상담)하는 흐름입니다.
 
 ```mermaid
