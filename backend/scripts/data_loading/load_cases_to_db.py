@@ -299,6 +299,7 @@ def load_counsel_jsonl(
     jsonl_path: str,
     *,
     batch_size: int = 1000,
+    skip_existing: bool = False,
     conn: Optional[psycopg.Connection] = None
 ) -> Tuple[int, int]:
     """
@@ -412,6 +413,7 @@ def load_dispute_jsonl(
     agency: str,
     *,
     batch_size: int = 1000,
+    skip_existing: bool = False,
     conn: Optional[psycopg.Connection] = None
 ) -> Tuple[int, int]:
     """

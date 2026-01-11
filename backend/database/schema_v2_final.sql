@@ -469,7 +469,7 @@ CREATE INDEX IF NOT EXISTS idx_criteria_units_embedding_ivfflat
 
 -- 전문 검색 인덱스 (한국어)
 CREATE INDEX IF NOT EXISTS idx_criteria_units_unit_text_gin
-    ON criteria_units USING gin(to_tsvector('korean', unit_text));
+    ON criteria_units USING gin(to_tsvector('simple', unit_text));
 
 -- JSONB 인덱스 (doc 내부 필드 검색용)
 CREATE INDEX IF NOT EXISTS idx_criteria_units_doc_gin
