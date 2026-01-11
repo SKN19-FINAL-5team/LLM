@@ -7,6 +7,7 @@
 본 프로젝트는 복잡하고 전문적인 한국의 소비자 분쟁 관련 문의에 대해 정확하고 신뢰도 높은 답변을 제공하는 MAS(Multi-Agent System) 챗봇을 개발하는 것을 목표로 합니다. React, FastAPI, LangGraph, PostgreSQL 등 현대적인 기술 스택을 활용하여, 4년제 컴퓨터공학과 졸업생 수준의 개발자가 이해하고 기여할 수 있는 모범적인 프로젝트 구조를 제시합니다.
 
 **주요 데이터 소스:**
+
 - KCA, ECMC, KCDRC의 분쟁조정사례집
 - 한국소비자원, 소비자24의 상담사례
 - 한국소비자원의 소비자분쟁조정기준
@@ -159,6 +160,7 @@ sequenceDiagram
 **역할**: 총괄 지휘자 (Conductor)
 
 **책임**:
+
 - 전체 워크플로우 정의 (에이전트 호출 순서, 조건부 분기)
 - 상태 관리 (State): 각 에이전트의 결과를 공유 상태에 저장하고 다음 에이전트에게 전달
 - 에러 처리 및 재시도 로직
@@ -170,6 +172,7 @@ sequenceDiagram
 **역할**: 질의 분석 전문가
 
 **책임**:
+
 - **의도 파악**: 질문의 유형 분류 (일반 문의, 법률 해석, 유사 사례 검색 등)
 - **키워드 추출**: 검색에 사용할 핵심 키워드 식별
 - **메타데이터 생성**: 검색 필터링에 사용할 메타데이터 생성
@@ -181,6 +184,7 @@ sequenceDiagram
 **역할**: 정보 검색 전문가
 
 **책임**:
+
 - **쿼리 증강**: HyDE, Multi-Query 등을 통해 원본 쿼리를 검색에 더 적합한 형태로 변환
 - **다중 검색 전략**: Vector Search, Keyword Search, Hybrid Search 등 다양한 검색 방법 동원
 - **재순위화 (Re-ranking)**: 여러 검색 결과를 종합하여 가장 관련성 높은 순서로 정렬
@@ -192,6 +196,7 @@ sequenceDiagram
 **역할**: 답변 생성 전문가
 
 **책임**:
+
 - **프롬프트 엔지니어링**: 검색된 정보를 바탕으로 LLM에게 전달할 최적의 프롬프트 구성
 - **LLM 호출**: 외부 LLM (Claude, GPT 등) API 호출
 - **출처 관리**: 답변의 근거가 된 출처 정보를 명확히 정리하고 연결
@@ -203,6 +208,7 @@ sequenceDiagram
 **역할**: 법률 검토 전문가
 
 **책임**:
+
 - **사실 검증 (Fact-checking)**: 생성된 답변이 법률적으로 올바른지, 검색된 정보와 일치하는지 검증
 - **환각 (Hallucination) 방지**: LLM이 만들어낸 허위 정보를 필터링
 - **어조 및 표현 수정**: 법률 용어를 더 쉽고 정확하게 다듬음
@@ -463,23 +469,186 @@ Sprint 1은 **데이터 트랙을 선행(D1~D3)**하여 “검색 가능한 형�
 - **안정성**: 실패율, 재시도율, 타임아웃 비율
 - **비용**: 세션당 비용(LLM 토큰/검색 비용), 캐시 적중률
 
-## 5. 시작하기 (Getting Started)
+## 5. 실행 및 테스트 가이드 (Sprint 1 Prototype)
+
+### 5.1 전체 시스템 실행 (Docker Compose) - 권장
+
+가장 간편하게 백엔드, 프론트엔드, DB를 동시에 실행하는 방법입니다.
 
 ```bash
-# 1. 리포지토리 클론
-git clone https://github.com/Maroco0109/ddoksori_demo.git
-cd ddoksori_demo
+# 1. 환경 변수 설정 (최초 1회)
+# .env.example을 복사하여 .env 생성 및 설정 (.env에는 실제 API Key 필요)
+cp backend/.env.example backend/.env
 
-# 2. 환경 변수 설정
-# .env 파일을 생성하고 필요한 API 키 등을 입력합니다.
-
-# 3. Docker Compose를 사용하여 서비스 실행
+# 2. 전체 서비스 빌드 및 실행
 docker-compose up --build
+```
+
+**접속 정보:**
+
+- **Frontend (사용자 UI)**: [http://localhost:5173](http://localhost:5173)
+- **Backend API (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **CloudBeaver (DB 관리)**: [http://localhost:8978](http://localhost:8978)
+
+> **Note**: 최초 실행 시에는 DB 스키마 생성과 데이터 로딩이 필요할 수 있습니다. (5.2의 2단계, 3단계 참고)
+
+---
+
+### 5.2 수동 실행 (개발자 모드)
+
+개발 및 디버깅을 위해 각 서비스를 개별적으로 실행하는 방법입니다.
+
+#### 1단계: DB 컨테이너 실행
+
+```bash
+docker-compose up -d db
+# DB가 완전히 뜰 때까지 잠시 대기
+```
+
+#### 2단계: 스키마 적용 (최초 1회)
+
+```bash
+docker exec -i ddoksori_db psql -U postgres -d ddoksori < backend/database/schema_v2_final.sql
+```
+
+#### 3단계: 테스트 데이터 로딩 (최초 1회)
+
+```bash
+conda activate dsr
+cd backend/scripts/data_loading
+python load_all_test_data.py --all
+```
+
+#### 4단계: 데이터 임베딩
+
+데이터 로딩 후, 검색을 위한 벡터 임베딩을 생성해야 합니다. (백그라운드에서 실행 권장)
+
+```bash
+# 로컬 임베딩 서버를 사용하여 모든 데이터의 임베딩 생성
+python backend/scripts/data_loading/embed_all_data.py
+```
+
+*참고: 데이터 양에 따라 시간이 소요될 수 있습니다 (약 30분~1시간). 터미널에 "Done"이 출력될 때까지 기다리거나, 별도 터미널에서 실행하세요.*
+
+#### 5단계: 백엔드 서버 실행
+
+```bash
+cd ../../../backend
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### 6단계: 프론트엔드 실행
+
+새로운 터미널에서 실행합니다.
+
+```bash
+cd frontend
+npm install  # (최초 1회만)
+npm run dev
+```
+
+---
+
+### 5.3 기능 테스트 시나리오 (S1-4 Verified)
+
+프론트엔드([http://localhost:5173](http://localhost:5173))에 접속하여 다음 시나리오를 테스트해보세요.
+
+#### ✅ 시나리오 1: 분쟁 상담 및 스트리밍 답변
+
+- **Test**: 채팅창에 "헬스장 환불 규정 알려줘" 입력
+- **Verify**:
+  - 답변이 실시간으로 타이핑되는지 (Streaming UX)
+  - 답변 최상단에 "본 답변은 정보 제공 목적..." 경고(Disclaimer)가 표시되는지
+
+#### ✅ 시나리오 2: 인라인 출처 확인 (Citations)
+
+- **Test**: 답변 내에 포함된 `[1]`, `[2]` 등 파란색 숫자 클릭
+- **Verify**:
+  - 화면 중앙에 **출처 상세 모달**이 뜨는지
+  - **기관명(Source Org)**, **유사도(Similarity)**, 관련 법령/사례 제목이 표시되는지 확인
+
+#### ✅ 시나리오 3: 안전 장치 (Safety Guardrails)
+
+- **Test**: 모호한 질문 입력 (예: "그냥 환불해줘")
+- **Verify**:
+  - "정보가 충분하지 않습니다"라는 취지의 답변 생성
+  - **오렌지색 경고 박스**에 "추가 확인이 필요한 사항" 역질문 리스트가 표시되는지 확인
+
+#### ✅ 시나리오 4: 일반 대화 (General Chat)
+
+- **Test**: "안녕", "반가워" 등 일상 대화 입력
+- **Verify**:
+  - 스트리밍 답변 동작 확인
+  - 출처(Citations)가 붙지 않는지 확인
+  - 채팅 말풍선 색상이 변경되는지 (Mint Green 테마) 확인
+
+#### ✅ 시나리오 5: 에러 처리 (Error Handling)
+
+- **Test**: 백엔드 서버 중지(`Ctrl+C`) 후 질문 입력
+- **Verify**: "일시적인 오류가 발생했습니다" 또는 적절한 에러 메시지가 표시되는지 확인
+
+#### ✅ 시나리오 6: 세션 유지 (Session Persistence)
+
+##### 3. 임베딩 생성 (필수)
+
+- **Test**: 대화 진행 중 브라우저 페이지 새로고침
+- **Verify**: 기존 대화 내역(출처 포함)이 그대로 유지/복원되는지 확인
+
+---
+
+### 5.4 백엔드 자동화 테스트
+
+RAG 파이프라인의 성능을 검증하는 자동화 스크립트입니다.
+
+```bash
+# 통합 테스트 러너 실행
+./backend/run_local_rag_tests.sh all
+```
+
+- **api**: API 응답 및 포맷 검증
+- **integration**: DB 연결 및 데이터 흐름 검증
+- **data**: 로딩된 데이터 무결성 검증
+
+> **RAGAS 정량 평가**: 현재 `scripts/evaluation/interactive_rag_test.py`를 통해 정성적 평가가 가능합니다. (정량 평가 스크립트는 추후 구현 예정)
+
+### 5.5 DB 백업
+
+매번 데이터를 로딩하고 임베딩하는 시간(30분 이상)을 절약하기 위해, 구축된 DB를 백업하고 복원하는 방법입니다.
+데이터가 구축된 PC에서 다음 명령어를 실행하여 SQL 파일로 추출합니다.
+
+```bash
+# ddoksori_db 컨테이너의 데이터를 backup.sql 파일로 저장
+docker exec -t ddoksori_db pg_dump -U postgres -d ddoksori -c > backup.sql
+```
+
+### 5.6 DB 복원
+
+새로운 PC(예: 노트북)에서 Docker DB 컨테이너만 실행한 상태(`docker-compose up -d db`)에서 복원합니다.
+
+```bash
+# 주의: 기존 데이터는 초기화됩니다.
+cat backup.sql | docker exec -i ddoksori_db psql -U postgres -d ddoksori
 ```
 
 ## 6. 문서 및 가이드
 
-### 6.1. 데이터베이스 및 임베딩
+### 6.1 프론트엔드 설계 결정 (S1-4 Design Decisions)
+
+Sprint 1 프로토타입의 빠른 배포와 사용자 경험(UX) 최적화를 위해 다음과 같은 설계가 적용되었습니다.
+
+- **Client-Side Streaming**:
+  - 백엔드 SSE(Server-Sent Events) 구현 복잡도를 줄이고 빠른 MVP 배포를 위해, 클라이언트(Frontend)에서 응답 텍스트를 단어 단위로 스트리밍 시뮬레이션하도록 구현했습니다.
+  - 실제 사용자 경험은 SSE와 동일합니다.
+
+- **Inline Citations (각주 스타일)**:
+  - 답변의 신뢰도를 높이고 전문가스러운 느낌을 주기 위해 학술적 `[1]` 각주 스타일을 채택했습니다.
+  - 각주 클릭 시 상세 모달을 통해 원문 확인이 가능하여, 독서 흐름을 끊지 않으면서 심층 정보 탐색이 가능합니다.
+
+- **Safety Warning (안전 장치 분리)**:
+  - 안전 문구(정보 부족 경고)가 일반 답변과 섞이지 않도록 별도의 오렌지색 경고 메시지로 분리했습니다.
+  - 이는 사용자의 주의를 환기시키고 필요한 추가 정보를 명확히 요청하는 효과가 있습니다.
+
+### 6.2 데이터베이스 및 임베딩
 
 - **[pgvector Schema 생성 - 임베딩 - 데이터 로드 가이드](docs/guides/embedding_process_guide.md)**
   - PostgreSQL + pgvector 환경 설정
@@ -499,6 +668,7 @@ docker-compose up --build
   - 결과 저장 및 CSV 내보내기
 
 **사용 방법**:
+
 ```bash
 conda activate ddoksori
 python backend/scripts/evaluation/interactive_rag_test.py
