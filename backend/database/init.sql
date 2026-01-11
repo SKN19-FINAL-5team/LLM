@@ -12,6 +12,20 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'ddoksori')\gexec
 -- Enable pgvector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
+-- 한국어 검색 설정 생성 (Fallback: simple)
+-- 'korean' 설정이 없어서 발생하는 오류를 방지하기 위해 simple 설정을 복사하여 생성합니다.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_ts_config
+        WHERE cfgname = 'korean'
+    ) THEN
+        CREATE TEXT SEARCH CONFIGURATION public.korean (COPY = simple);
+    END IF;
+END
+$$;
+
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE ddoksori TO postgres;
 
