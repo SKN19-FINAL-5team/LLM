@@ -7,6 +7,7 @@ Combines dense (pgvector) and lexical (PostgreSQL FTS) retrieval
 using Reciprocal Rank Fusion (RRF) algorithm.
 """
 
+import time
 from typing import List, Dict, Optional
 import psycopg2
 from .retriever import RAGRetriever, SearchResult
@@ -112,6 +113,54 @@ class HybridRetriever:
         Delegates to .search() which performs hybrid retrieval with RRF fusion
         """
         return self.search(query, top_k, doc_type_filter, chunk_type_filter)
+
+    def search_instrumented(
+        self,
+        query: str,
+        top_k: int = 10,
+        doc_type_filter: Optional[str] = None,
+        chunk_type_filter: Optional[str] = None
+    ) -> Dict:
+        """
+        Instrumented hybrid search with timing and candidate counts.
+
+        Returns:
+            {
+                'results': List[SearchResult],
+                'embedding_time_ms': float,
+                'search_time_ms': float,
+                'dense_candidates': int,
+                'lexical_candidates': int
+            }
+        """
+        candidate_count = top_k * 3
+
+        # Dense retrieval with timing (includes embedding time)
+        dense_start = time.time()
+        dense_results = self._dense_search(
+            query, candidate_count, doc_type_filter, chunk_type_filter
+        )
+        dense_time = (time.time() - dense_start) * 1000
+
+        # Lexical retrieval with timing
+        lex_start = time.time()
+        lexical_results = self._lexical_search(
+            query, candidate_count, doc_type_filter, chunk_type_filter
+        )
+        lex_time = (time.time() - lex_start) * 1000
+
+        # RRF fusion
+        fused_results = self._reciprocal_rank_fusion(
+            dense_results, lexical_results, k=60
+        )
+
+        return {
+            'results': fused_results[:top_k],
+            'embedding_time_ms': dense_time,  # Dense includes embedding
+            'search_time_ms': lex_time,       # Lexical search time
+            'dense_candidates': len(dense_results),
+            'lexical_candidates': len(lexical_results)
+        }
 
     def _dense_search(
         self,

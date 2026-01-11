@@ -4,6 +4,7 @@
 LLM 기반 구조화된 답변 생성
 """
 import os
+import time
 from typing import List, Dict, Tuple, Optional
 from openai import OpenAI
 
@@ -30,10 +31,10 @@ class RAGGenerator:
     - Next action checklist
     """
 
-    def __init__(self, model: str = "gpt-4", use_llm: bool = True):
+    def __init__(self, model: str = "gpt-4o-mini", use_llm: bool = True):
         """
         Args:
-            model: LLM 모델 (기본값: gpt-4)
+            model: LLM 모델 (기본값: gpt-4o-mini)
             use_llm: LLM 사용 여부 (False면 stub 모드)
         """
         self.model = model
@@ -66,6 +67,81 @@ class RAGGenerator:
             return self._generate_llm_answer(query, chunks)
         else:
             return self._generate_stub_answer(query, chunks)
+
+    def generate_answer_instrumented(self, query: str, chunks: List[Dict]) -> Dict:
+        """
+        검색 결과 기반 구조화된 답변 생성 with logging metadata
+
+        Returns standard fields plus:
+        - 'system_prompt': str
+        - 'user_prompt': str
+        - 'prompt_tokens': int
+        - 'completion_tokens': int
+        - 'response_time_ms': float
+        """
+        if not chunks:
+            result = self._no_results_response()
+            result.update({
+                'system_prompt': '',
+                'user_prompt': '',
+                'prompt_tokens': 0,
+                'completion_tokens': 0,
+                'response_time_ms': 0
+            })
+            return result
+
+        if not self.use_llm:
+            result = self._generate_stub_answer(query, chunks)
+            result.update({
+                'system_prompt': '',
+                'user_prompt': '',
+                'prompt_tokens': 0,
+                'completion_tokens': 0,
+                'response_time_ms': 0
+            })
+            return result
+
+        # LLM mode with instrumentation
+        system_prompt = self._get_system_prompt()
+        user_prompt = self._build_prompt(query, chunks)
+
+        start = time.time()
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.3
+        )
+        response_time = (time.time() - start) * 1000
+
+        # Extract token usage
+        usage = response.usage
+        prompt_tokens = usage.prompt_tokens if usage else 0
+        completion_tokens = usage.completion_tokens if usage else 0
+
+        answer_text = response.choices[0].message.content
+
+        # Safety guardrails
+        has_evidence, questions = self._check_evidence(query, chunks)
+
+        if not has_evidence:
+            answer_text = self._format_insufficient_evidence(answer_text, questions)
+
+        return {
+            'answer': answer_text,
+            'chunks_used': len(chunks),
+            'model': self.model,
+            'has_sufficient_evidence': has_evidence,
+            'clarifying_questions': questions,
+            # Logging metadata
+            'system_prompt': system_prompt,
+            'user_prompt': user_prompt,
+            'prompt_tokens': prompt_tokens,
+            'completion_tokens': completion_tokens,
+            'response_time_ms': response_time
+        }
 
     def _generate_llm_answer(self, query: str, chunks: List[Dict]) -> Dict:
         """Generate answer using LLM with S1-1 template"""
