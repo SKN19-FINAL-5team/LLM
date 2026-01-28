@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent, RefObject } from 'react';
 import type { ChatSession, ChatType, DisputeForm, DisputeFormData, MessageWithCitations } from '@/shared/types';
 import { Send } from 'lucide-react';
 import { useChatStore } from '@/features/chat/chat.store';
+import { useAuthStore } from '@/features/auth/auth.store';
 import { useChatMutation } from './hooks/useChatMutation';
 import { useStreamingChat } from './hooks/useStreamingChat';
 import { extractCitations } from '@/shared/lib/citation';
@@ -18,6 +19,7 @@ interface ChatPageProps {
 
 export default function ChatPage({ currentSessionId = null, onSessionCreate }: ChatPageProps) {
   const storeSessionId = useChatStore((state) => state.currentSessionId);
+  const storeActiveChatType = useChatStore((state) => state.activeChatType);
   const setStoreSessionId = useChatStore((state) => state.setCurrentSessionId);
   const setStoreChatType = useChatStore((state) => state.setActiveChatType);
   const setChatSessions = useChatStore((state) => state.setChatSessions);
@@ -74,7 +76,7 @@ export default function ChatPage({ currentSessionId = null, onSessionCreate }: C
   const [activeChatType, setActiveChatType] = useState<ChatType | null>(null);
 
   // 로그인 여부 확인
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
 
   // 컴포넌트 마운트 시 스크롤 최상단으로 이동 (한 번만 실행)
   useEffect(() => {
@@ -111,7 +113,10 @@ export default function ChatPage({ currentSessionId = null, onSessionCreate }: C
             timestamp: new Date(msg.timestamp)
           }));
 
-          if (session.type === 'dispute') {
+          // store에서 설정한 chatType을 우선 사용, 없으면 세션의 type 사용
+          const chatType = storeActiveChatType || session.type;
+
+          if (chatType === 'dispute') {
             setDisputeMessages(restoredMessages);
             setActiveChatType('dispute');
             setIsFormSubmitted(true);
@@ -128,6 +133,12 @@ export default function ChatPage({ currentSessionId = null, onSessionCreate }: C
             setTimeout(() => {
               generalMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, 200);
+          }
+        } else if (storeActiveChatType) {
+          // 세션이 없지만 store에 chatType이 설정되어 있는 경우
+          setActiveChatType(storeActiveChatType);
+          if (storeActiveChatType === 'dispute') {
+            setIsFormSubmitted(false);
           }
         }
       } catch (e) {
@@ -166,7 +177,7 @@ export default function ChatPage({ currentSessionId = null, onSessionCreate }: C
         disputeDetail: ''
       });
     }
-  }, [resolvedSessionId, isLoggedIn, setStoreChatType, setStoreSessionId, storeSessionId]);
+  }, [resolvedSessionId, isLoggedIn, setStoreChatType, setStoreSessionId, storeSessionId, storeActiveChatType]);
 
   // 채팅 세션 저장 함수
   const saveChatSession = (type: ChatType, messages: Message[]) => {

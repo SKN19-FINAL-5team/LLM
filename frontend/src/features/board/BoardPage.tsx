@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, ThumbsUp, Calendar, Eye, MessageSquare } from 'lucide-react';
 import { CATEGORY_DISPLAY_MAP, CATEGORY_LABELS, POST_CATEGORIES } from '@/shared/config/categories';
 import type { BoardCategoryId, BoardPost, BoardPostForm, BoardSearchType } from './board.types';
@@ -7,6 +8,7 @@ import PostDetail from './components/PostDetail';
 import EditPost from './components/EditPost';
 
 export default function BoardPage() {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<BoardCategoryId>('all');
   const [currentView, setCurrentView] = useState<'list' | 'write' | 'detail' | 'edit'>('list'); // 'list', 'write', 'detail', 'edit'
   const [selectedPost, setSelectedPost] = useState<BoardPost | null>(null);
@@ -368,6 +370,20 @@ export default function BoardPage() {
     }
   ]);
 
+  // 마이페이지에서 게시글 클릭 시 해당 게시글 상세보기로 이동
+  useEffect(() => {
+    const state = location.state as { postId?: number; viewType?: string } | null;
+    if (state?.postId && state?.viewType === 'detail') {
+      const post = posts.find((p) => p.id === state.postId);
+      if (post) {
+        setSelectedPost(post);
+        setCurrentView('detail');
+        // state 초기화 (뒤로가기 시 다시 상세보기로 가지 않도록)
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, posts]);
+
   const getCategoryDisplayName = (categoryId: BoardCategoryId) => {
     if (categoryId === 'all') {
       return CATEGORY_LABELS.all;
@@ -376,9 +392,19 @@ export default function BoardPage() {
   };
 
   const handleWritePost = (formData: BoardPostForm) => {
+    // 서브 카테고리가 있는 경우 카테고리 이름에 추가
+    let categoryDisplay = getCategoryDisplayName(formData.category);
+    if (formData.subCategory) {
+      const subCategoryNames: Record<string, string> = {
+        'before-mediation': '조정 이전 단계에서 해결',
+        'through-mediation': '조정을 통한 해결'
+      };
+      categoryDisplay += ` - ${subCategoryNames[formData.subCategory] || formData.subCategory}`;
+    }
+
     const newPost = {
       id: Date.now(),
-      category: getCategoryDisplayName(formData.category),
+      category: categoryDisplay,
       title: formData.title,
       author: '현재사용자**',
       date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').slice(0, -1),
@@ -409,9 +435,19 @@ export default function BoardPage() {
   const handleUpdatePost = (postId: number, formData: BoardPostForm) => {
     const updatedPosts = posts.map(post => {
       if (post.id === postId) {
+        // 서브 카테고리가 있는 경우 카테고리 이름에 추가
+        let categoryDisplay = getCategoryDisplayName(formData.category);
+        if (formData.subCategory) {
+          const subCategoryNames: Record<string, string> = {
+            'before-mediation': '조정 이전 단계에서 해결',
+            'through-mediation': '조정을 통한 해결'
+          };
+          categoryDisplay += ` - ${subCategoryNames[formData.subCategory] || formData.subCategory}`;
+        }
+
         const updatedPost = {
           ...post,
-          category: getCategoryDisplayName(formData.category),
+          category: categoryDisplay,
           title: formData.title,
           preview: formData.content.substring(0, 50) + (formData.content.length > 50 ? '...' : ''),
           editedDate: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').slice(0, -1)
@@ -572,7 +608,7 @@ export default function BoardPage() {
             className={`px-4 sm:px-5 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-base font-medium transition-all ${
               activeTab === cat.id
                 ? 'bg-deep-teal text-white'
-                : 'bg-white border-2 border-ivory text-gray-purple hover:border-lavender'
+                : 'bg-white border-2 border-ivory text-gray-purple hover:border-deep-teal'
             }`}
             onClick={() => handleTabChange(cat.id)}
           >
