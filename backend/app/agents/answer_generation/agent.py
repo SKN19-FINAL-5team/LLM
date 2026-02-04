@@ -538,10 +538,12 @@ def _followup_detail_response(state: Dict, config=None) -> Dict:
     # Generate followup questions (캐시 응답에서도 생성)
     query_analysis = state.get("query_analysis", {})
     followup_generator = FollowupQuestionGenerator()
+    is_fallback = model_used in ("rule_based", "safe_fallback")
     followup_result = followup_generator.generate_questions(
         query_analysis=query_analysis,
         retrieval=filtered_retrieval,
         answer=draft_answer,
+        is_fallback=is_fallback,
     )
     followup_questions = followup_result.get("followup_questions", [])
 
@@ -992,10 +994,12 @@ async def generation_node_v2(state: Dict, config: Any = None) -> Dict:
     # Phase 6: Generate followup questions
     query_analysis = state.get("query_analysis", {})
     followup_generator = FollowupQuestionGenerator()
+    is_fallback = model_used in ("rule_based", "safe_fallback")
     followup_result = followup_generator.generate_questions(
         query_analysis=query_analysis,
         retrieval=retrieval,
         answer=draft_answer,
+        is_fallback=is_fallback,
     )
     followup_questions = followup_result.get("followup_questions", [])
 

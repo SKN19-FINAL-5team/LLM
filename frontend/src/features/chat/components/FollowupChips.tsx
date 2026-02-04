@@ -8,9 +8,9 @@ export function FollowupChips({ questions, onSelect }: FollowupChipsProps) {
 
   return (
     <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200/50">
-      {questions.slice(0, 3).map((question, index) => (
+      {questions.slice(0, 3).map((question) => (
         <button
-          key={index}
+          key={question}
           onClick={() => onSelect(question)}
           className="
             px-3 py-1.5 text-sm

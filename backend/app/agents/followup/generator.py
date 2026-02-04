@@ -47,6 +47,7 @@ class FollowupQuestionGenerator:
         retrieval: Dict,
         answer: str,
         format_id: Optional[str] = None,
+        is_fallback: bool = False,
     ) -> Dict[str, List[str]]:
         """
         후속 질문과 명확화 질문을 생성합니다.
@@ -84,7 +85,9 @@ class FollowupQuestionGenerator:
             }
         """
         # 1. 컨텍스트 구축
-        context = self._build_context(query_analysis, retrieval, answer, format_id)
+        context = self._build_context(
+            query_analysis, retrieval, answer, format_id, is_fallback
+        )
 
         # 2. 후속 질문 생성
         followup_questions = self._generate_followup_questions(context)
@@ -103,6 +106,7 @@ class FollowupQuestionGenerator:
         retrieval: Dict,
         answer: str,
         format_id: Optional[str] = None,
+        is_fallback: bool = False,
     ) -> Dict:
         """
         템플릿 매칭을 위한 컨텍스트를 구축합니다.
@@ -158,6 +162,8 @@ class FollowupQuestionGenerator:
             "missing_amount": "amount" in missing_fields,
             # 답변 형식
             "format_id": format_id,
+            # Fallback 여부 (rule_based 또는 safe_fallback 사용 시)
+            "is_fallback": is_fallback,
         }
 
     def _select_questions_by_context(self, context: Dict) -> List[str]:
