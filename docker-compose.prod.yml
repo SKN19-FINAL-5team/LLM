@@ -45,6 +45,9 @@ services:
       # === Logging ===
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
+      # === Environment ===
+      - ENVIRONMENT=production
+
       # === OAuth & Auth ===
       # URL 설정 (프로덕션 도메인)
       - BACKEND_URL=${BACKEND_URL:-https://ddoksori.duckdns.org}
