@@ -660,6 +660,7 @@ def _build_generation_result(
     model_used: str = None,
     cache_hit: bool = False,
     clarifying_questions: List = None,
+    is_fallback: bool = False,
     **kwargs,
 ) -> Dict:
     """통합 결과 생성 헬퍼"""
@@ -680,6 +681,7 @@ def _build_generation_result(
         "messages": [AIMessage(content=answer)],
         "generation_model_used": model_used,
         "_cache_hit": cache_hit,
+        "is_fallback": is_fallback,
     }
     if clarifying_questions:
         result["clarifying_questions"] = clarifying_questions
@@ -785,6 +787,7 @@ def _check_sufficiency(state: Dict, retrieval: Dict, start_time: float) -> tuple
             retrieval_confidence=retrieval_confidence,
             clarifying_questions=suf_result.clarifying_questions,
             model_used="sufficiency_insufficient",
+            is_fallback=True,
         )
         return (result, retrieval_confidence)
 
