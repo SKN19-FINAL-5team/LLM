@@ -9,49 +9,95 @@ pytest 기반으로 구성되어 있으며, 기능별로 디렉토리가 분리�
 
 ```
 backend/scripts/testing/
-├── conftest.py          # 공통 Fixture (DB 연결, 시드 데이터 등)
-├── README.md            # 이 문서
+├── conftest.py                      # 공통 Fixture (DB 연결, 시드 데이터 등)
+├── README.md                        # 이 문서
+├── test_mas_architecture.py         # MAS 아키텍처 통합 테스트
 │
-├── api/                 # API 엔드포인트 테스트
-│   ├── test_api_endpoints.py     # 기본 API 테스트
-│   ├── test_api_concurrent.py    # 동시성 테스트
-│   └── test_api_error_handling.py # 에러 핸들링 테스트
+├── agents/                          # 에이전트 테스트
+│   ├── __init__.py
+│   └── test_base_agent.py
 │
-├── orchestrator/        # 오케스트레이터 테스트
-│   ├── test_pr3_graph.py         # 그래프 정의 테스트
-│   ├── test_react.py             # ReAct 패턴 테스트
-│   ├── test_routing_logic.py     # 라우팅 로직 테스트
-│   └── ...
+├── answer_generation/               # 답변 생성 테스트
+│   ├── test_followup.py            # 후속 질문 생성
+│   ├── test_formats.py             # 답변 포맷
+│   └── test_specialist_agency.py   # 전문가 에이전시
 │
-├── query_analysis/      # 질의분석 테스트
-│   ├── test_pr2_hybrid.py        # 하이브리드 분석 테스트
-│   └── test_ambiguous_queries.py # 모호한 질의 테스트
+├── auth/                            # 인증 테스트
+│   └── test_jwt_dependencies.py    # JWT 의존성
 │
-├── retrieval/           # 검색 테스트
-│   └── test_embedding_client.py  # 임베딩 클라이언트 테스트
+├── data/                            # 데이터 테스트
+│   ├── __init__.py
+│   └── test_collect_training_data.py # 학습 데이터 수집
 │
-├── generation/          # 답변 생성 테스트
-│   └── test_generation.py        # 생성 노드 테스트
+├── domain/                          # 도메인 분류 테스트
+│   ├── __init__.py
+│   ├── golden_set.py               # 도메인 분류 골든셋
+│   └── test_domain_classifier.py   # 도메인 분류기
 │
-├── legal_review/        # 검토 테스트
-│   └── test_review_logic.py      # 검토 로직 테스트
+├── e2e/                             # E2E 통합 테스트
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_merged_graph.py        # 병합 그래프
+│   ├── test_merged_retrieval.py    # 병합 검색
+│   ├── test_mock_scenarios.py      # Mock 시나리오
+│   ├── test_system_architecture.py # 시스템 아키텍처
+│   ├── test_unified_retriever.py   # 통합 검색기
+│   └── trace_logger.py             # 트레이스 로거
 │
-├── domain/              # 도메인 분류 테스트
-│   └── test_domain_classification.py
+├── generation/                      # 생성 노드 테스트
+│   ├── __init__.py
+│   └── conftest.py
 │
-├── data/                # 데이터 관련 테스트
-│   ├── test_data_quality.py      # 데이터 품질 테스트
-│   └── test_collect_training_data.py # 학습 데이터 수집 테스트
+├── legal_review/                    # 법률 검토 테스트
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_enhanced_review.py     # 강화 검토
+│   └── test_review_logic.py        # 검토 로직
 │
-├── integration/         # 통합 테스트
-│   ├── test_api_integration.py   # API 통합 테스트
-│   └── test_docker_environment.py # Docker 환경 테스트
+├── llm/                             # LLM 테스트
+│   └── verify_compatibility.py     # 호환성 검증
 │
-├── llm/                 # LLM 관련 테스트
-│   ├── test_exaone_health.py     # EXAONE 상태 테스트
-│   └── test_tool_use_accuracy.py # 도구 사용 정확도 테스트
+├── persistence/                     # 영속성 테스트
+│   └── test_conversation_db_unit.py # 대화 DB 유닛
 │
-└── guardrail/           # 가드레일 테스트
+├── query_analysis/                  # 질의 분석 테스트
+│   ├── conftest.py
+│   ├── test_ambiguous_queries.py   # 모호한 질의
+│   ├── test_classifier.py          # 분류기
+│   ├── test_intent_cache.py        # 의도 캐시
+│   ├── test_new_query_types.py     # 새 질의 타입
+│   └── test_pr2_hybrid.py          # 하이브리드 분석
+│
+├── retrieval/                       # 검색 테스트
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── embedding_server_simple.py  # 임베딩 서버 (테스트용)
+│   └── test_embedding_client.py    # 임베딩 클라이언트
+│
+└── supervisor/                      # 슈퍼바이저 테스트
+    ├── __init__.py
+    ├── conftest.py
+    ├── test_adaptive_rag.py              # 적응형 RAG
+    ├── test_agent_communication.py       # 에이전트 통신
+    ├── test_agent_metrics.py             # 에이전트 메트릭
+    ├── test_agent_trace.py               # 에이전트 트레이스
+    ├── test_answer_cache.py              # 답변 캐시
+    ├── test_conversation_memory.py       # 대화 메모리
+    ├── test_conversation_phase_manager.py # 대화 단계 관리자
+    ├── test_e2e_queries.py               # E2E 질의
+    ├── test_fast_path.py                 # 빠른 경로
+    ├── test_followup_with_context.py     # 컨텍스트 후속 질문
+    ├── test_mas_integration.py           # MAS 통합
+    ├── test_mas_supervisor_graph.py      # MAS 슈퍼바이저 그래프
+    ├── test_memory_db.py                 # 메모리 DB
+    ├── test_progressive_disclosure.py    # 점진적 공개
+    ├── test_retrieval_merge.py           # 검색 병합
+    ├── test_retry_context.py             # 재시도 컨텍스트
+    ├── test_selective_retrieval.py       # 선택적 검색
+    ├── test_sufficiency.py               # 충분성 판단
+    ├── test_supervisor.py                # 슈퍼바이저 기본
+    ├── test_supervisor_state.py          # 슈퍼바이저 상태
+    └── visualize_graph.py                # 그래프 시각화
 ```
 
 ## 테스트 실행
@@ -59,26 +105,28 @@ backend/scripts/testing/
 ### 전체 테스트
 
 ```bash
-conda run -n dsr pytest
+PYTHONPATH=backend pytest
 ```
 
 ### 특정 디렉토리만
 
 ```bash
-conda run -n dsr pytest scripts/testing/orchestrator/
-conda run -n dsr pytest scripts/testing/api/
+PYTHONPATH=backend pytest scripts/testing/supervisor/
+PYTHONPATH=backend pytest scripts/testing/e2e/
+PYTHONPATH=backend pytest scripts/testing/query_analysis/
 ```
 
 ### 특정 파일만
 
 ```bash
-conda run -n dsr pytest scripts/testing/orchestrator/test_pr3_graph.py
+PYTHONPATH=backend pytest scripts/testing/supervisor/test_mas_supervisor_graph.py
+PYTHONPATH=backend pytest scripts/testing/e2e/test_system_architecture.py
 ```
 
 ### 특정 테스트 함수만
 
 ```bash
-conda run -n dsr pytest scripts/testing/orchestrator/test_pr3_graph.py::test_graph_has_all_nodes
+PYTHONPATH=backend pytest scripts/testing/supervisor/test_mas_supervisor_graph.py::test_supervisor_graph_nodes
 ```
 
 ## 마커 사용
@@ -90,28 +138,40 @@ conda run -n dsr pytest scripts/testing/orchestrator/test_pr3_graph.py::test_gra
 | `unit` | Unit 테스트 (DB 의존성 없음) |
 | `integration` | 통합 테스트 (PostgreSQL 필요) |
 | `api` | API 엔드포인트 테스트 |
-| `orchestrator` | 오케스트레이터 테스트 |
+| `supervisor` | 슈퍼바이저 테스트 (MAS Supervisor) |
+| `agent` | 에이전트 테스트 |
+| `retrieval` | 검색 테스트 |
+| `generation` | 답변 생성 테스트 |
+| `review` | 검토 테스트 |
 | `slow` | 느린 테스트 (LLM 호출 등) |
-| `docker` | Docker 환경 필요 |
-| `skip_ci` | CI에서 스킵 |
-| `llm` | LLM API 호출 필요 |
+| `docker` | Docker 환경 필요 (RUN_DOCKER_TESTS=1) |
+| `skip_ci` | CI에서 스킵 (GITHUB_ACTIONS 환경) |
+| `llm` | LLM API 호출 필요 (OPENAI_API_KEY) |
+| `e2e` | E2E 통합 테스트 - 전체 워크플로우 검증 |
 | `needs_db` | DB 연결 필요 |
 | `needs_data` | 시드 데이터 필요 |
+| `asyncio` | 비동기 테스트 (pytest-asyncio) |
 
 ### 마커로 필터링
 
 ```bash
 # Unit 테스트만
-conda run -n dsr pytest -m unit
+PYTHONPATH=backend pytest -m unit
 
 # Integration 테스트 제외
-conda run -n dsr pytest -m "not integration"
+PYTHONPATH=backend pytest -m "not integration"
+
+# Supervisor 테스트만
+PYTHONPATH=backend pytest -m supervisor
 
 # Docker 테스트만 (RUN_DOCKER_TESTS=1 필요)
-RUN_DOCKER_TESTS=1 conda run -n dsr pytest -m docker
+RUN_DOCKER_TESTS=1 PYTHONPATH=backend pytest -m docker
 
 # 느린 테스트 제외
-conda run -n dsr pytest -m "not slow"
+PYTHONPATH=backend pytest -m "not slow"
+
+# E2E 테스트만
+PYTHONPATH=backend pytest -m e2e
 ```
 
 ## Fixture
@@ -155,13 +215,13 @@ import pytest
 
 @pytest.mark.unit
 def test_simple_logic():
-    \"\"\"Unit 테스트 - DB 불필요\"\"\"
+    """Unit 테스트 - DB 불필요"""
     assert 1 + 1 == 2
 
 @pytest.mark.integration
 @pytest.mark.needs_db
 def test_with_database(db_connection):
-    \"\"\"Integration 테스트 - DB 필요\"\"\"
+    """Integration 테스트 - DB 필요"""
     if db_connection is None:
         pytest.skip("DB 연결 불가")
     # ...
@@ -169,7 +229,13 @@ def test_with_database(db_connection):
 @pytest.mark.slow
 @pytest.mark.llm
 def test_llm_response():
-    \"\"\"느린 LLM 테스트\"\"\"
+    """느린 LLM 테스트"""
+    # ...
+
+@pytest.mark.e2e
+@pytest.mark.asyncio
+async def test_full_workflow():
+    """E2E 비동기 테스트"""
     # ...
 ```
 
@@ -183,7 +249,7 @@ import pytest
 
 @pytest.fixture
 def mock_retriever():
-    \"\"\"Mock retriever for retrieval tests\"\"\"
+    """Mock retriever for retrieval tests"""
     return MockRetriever()
 ```
 

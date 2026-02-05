@@ -18,12 +18,114 @@ Supervisor → Fan-out → [Law|Criteria|Case|Counsel] → retrieval_merge → S
 """
 
 import logging
+import os
 import time
 from typing import Dict, Any, List, Optional
 
 from ..state import ChatState, RetrievalResult, IndividualRetrievalResult
 
 logger = logging.getLogger(__name__)
+
+# Phase 2-2: 재랭킹 활성화 여부
+RERANKER_ENABLED = os.getenv("RERANKER_ENABLED", "false").lower() == "true"
+
+
+# ============================================================
+# Phase 2-1: 중복 제거 함수
+# ============================================================
+def _deduplicate_documents(documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    chunk_id 기반 중복 제거 (높은 RRF 점수 유지)
+
+    Args:
+        documents: 문서 리스트
+
+    Returns:
+        중복 제거된 문서 리스트 (RRF 점수 순 정렬)
+    """
+    if not documents:
+        return documents
+
+    seen: Dict[str, Dict[str, Any]] = {}
+    for doc in documents:
+        chunk_id = doc.get('chunk_id') or doc.get('doc_id')
+        if not chunk_id:
+            continue
+
+        score = doc.get('rrf_score', 0) or doc.get('similarity', 0)
+        existing = seen.get(chunk_id)
+
+        if existing is None:
+            seen[chunk_id] = doc
+        else:
+            existing_score = existing.get('rrf_score', 0) or existing.get('similarity', 0)
+            if score > existing_score:
+                seen[chunk_id] = doc
+
+    # RRF 점수 기준 내림차순 정렬
+    result = list(seen.values())
+    result.sort(key=lambda x: x.get('rrf_score', 0) or x.get('similarity', 0), reverse=True)
+    return result
+
+
+def _sort_by_rrf_score(documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """RRF 점수 기준 내림차순 정렬"""
+    return sorted(
+        documents,
+        key=lambda x: x.get('rrf_score', 0) or x.get('similarity', 0),
+        reverse=True
+    )
+
+
+# ============================================================
+# Phase 2-2: 재랭킹 적용
+# ============================================================
+async def _apply_reranking(
+    query: str,
+    merged: RetrievalResult,
+    top_n_per_section: int = 5,
+) -> RetrievalResult:
+    """
+    병합된 결과에 Cross-Encoder 재랭킹 적용
+
+    Args:
+        query: 사용자 쿼리
+        merged: 병합된 검색 결과
+        top_n_per_section: 섹션별 최대 결과 수
+
+    Returns:
+        재랭킹된 RetrievalResult
+    """
+    try:
+        from ...services.reranker import rerank_results, RERANKER_ENABLED
+
+        if not RERANKER_ENABLED:
+            return merged
+
+        # 각 섹션별 재랭킹
+        for section_key in ['laws', 'criteria', 'disputes', 'counsels']:
+            docs = merged.get(section_key, [])
+            if docs:
+                reranked = await rerank_results(
+                    query=query,
+                    results=docs,
+                    top_n=top_n_per_section,
+                    text_field='content',
+                )
+                merged[section_key] = reranked
+                logger.debug(
+                    f"[RetrievalMerge] Reranked {section_key}: "
+                    f"{len(docs)} → {len(reranked)}"
+                )
+
+        return merged
+
+    except ImportError:
+        logger.warning("[RetrievalMerge] Reranker import failed, skipping")
+        return merged
+    except Exception as e:
+        logger.error(f"[RetrievalMerge] Reranking error: {e}")
+        return merged
 
 
 def _calculate_merged_statistics(
@@ -97,6 +199,16 @@ def _merge_to_retrieval_result(
         if result.get('error'):
             logger.warning(f"[RetrievalMerge] {source} agent error: {result['error']}")
 
+    # Phase 2-1: 각 섹션별 중복 제거 및 RRF 점수 기준 정렬
+    for section_key in ['laws', 'criteria', 'disputes', 'counsels']:
+        original_count = len(merged[section_key])
+        merged[section_key] = _deduplicate_documents(merged[section_key])
+        dedup_count = len(merged[section_key])
+        if original_count != dedup_count:
+            logger.debug(
+                f"[RetrievalMerge] {section_key}: {original_count} → {dedup_count} (deduplicated)"
+            )
+
     # 통계 계산
     stats = _calculate_merged_statistics(individual_results)
     merged['max_similarity'] = stats['max_similarity']
@@ -164,6 +276,12 @@ async def retrieval_merge_node(state: ChatState) -> Dict[str, Any]:
 
     # 결과 병합
     merged = _merge_to_retrieval_result(individual_results)
+
+    # Phase 2-2: 재랭킹 (선택적)
+    if RERANKER_ENABLED:
+        user_query = state.get("user_query", "")
+        if user_query:
+            merged = await _apply_reranking(user_query, merged)
 
     # 출처 목록 생성 (sources 필드용)
     sources = []

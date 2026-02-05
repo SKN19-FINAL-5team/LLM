@@ -159,6 +159,7 @@ export function useStreamingChat(options: UseStreamingChatOptions = {}): UseStre
 
                 if (eventData.type === 'status') {
                   const { node, status, progress } = eventData.data;
+                  console.log('[SSE] Status update:', { node, status, progress });
                   setStreamingState((prev) => ({
                     ...prev,
                     currentNode: node,

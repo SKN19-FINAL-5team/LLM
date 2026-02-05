@@ -1,5 +1,7 @@
 # Legal Review Agent (법률 검토 에이전트)
 
+**최종 수정**: 2026-01-27 (Phase 8: gpt-4o 모델 업그레이드)
+
 ## 1. 개요 (Overview)
 
 **Legal Review Agent**는 생성된 답변(Draft)이 사용자에게 전달되기 전에 마지막으로 검증하는 품질 관리자(Quality Assurance)입니다. 특히 법률 및 분쟁 조정이라는 민감한 도메인 특성상, **잘못된 법적 조언**이나 **근거 없는 주장(Hallucination)**을 차단하는 것이 핵심 목표입니다.
@@ -54,13 +56,34 @@ flowchart TD
 
 ## 4. 코드 구조 (Code Structure)
 
+### 파일 목록
 - **`agent.py`**: 에이전트 진입점 (`review_node`). 규칙 기반 검토 로직(`PROHIBITED_PATTERNS`) 구현.
-- **`llm_reviewer.py`**: (Optional) 복잡한 문맥 검토가 필요할 때 사용하는 LLM 기반 검토기.
+- **`llm_reviewer.py`**: LLM 기반 검토기. 복잡한 문맥 검토가 필요할 때 사용.
+- **`reviewer_agent.py`**: 하이브리드 검토 시스템 (규칙 기반 + LLM).
+- **`confidence_scorer.py`**: 답변 신뢰도 점수 계산.
+- **`relevance_checker.py`**: 답변과 출처의 관련성 검증.
 - **`metrics.py`**: 검토 통과율, 수정률 등의 지표 정의.
 
 ### 주요 함수
 - `review_node(state)`: 초안을 검토하고 `ReviewResult`를 반환합니다.
 - `_filter_prohibited_expressions(...)`: 정규식을 사용하여 금지 표현을 안전한 표현으로 치환합니다.
+
+### 4.1 LLM 모델 설정 (Phase 8)
+
+| 설정 | 값 | 환경변수 |
+|------|-----|---------|
+| 기본 모델 | gpt-4o | `MODEL_REVIEW_AGENT` |
+| LLM 검토 활성화 | false (기본) | `ENABLE_LLM_REVIEW` |
+
+```python
+# 환경변수 설정 예시
+MODEL_REVIEW_AGENT=gpt-4o
+ENABLE_LLM_REVIEW=true  # LLM 2차 검토 활성화
+```
+
+**검토 흐름**:
+1. **규칙 기반 검토** (항상 실행): `PROHIBITED_PATTERNS` 매칭
+2. **LLM 검토** (선택적): `ENABLE_LLM_REVIEW=true` 시 gpt-4o로 문맥 검토
 
 ---
 
@@ -160,6 +183,7 @@ pytest scripts/testing/legal_review/test_review_logic.py -v
 |------|----|------|
 | 2026-01-14 | **Sprint 1** | 초기 규칙 기반 검토 로직(`PROHIBITED_PATTERNS`) 구현. |
 | 2026-01-22 | **PR 1** | Fast Path 도입. `chat_type='general'`인 경우 검토를 생략하는 `review_node_wrapper` 추가. |
+| 2026-01-27 | **Phase 8** | Review Agent 모델 gpt-4o 업그레이드. `MODEL_REVIEW_AGENT` 환경변수 도입. |
 
 ---
 

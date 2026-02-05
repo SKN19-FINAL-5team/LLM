@@ -31,6 +31,65 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# Phase 2-2: Supervisor LLM 설정
+# ============================================================================
+
+def _create_supervisor_llm():
+    """
+    환경 변수 기반 Supervisor LLM 생성
+
+    환경 변수:
+    - SUPERVISOR_LLM_ENABLED: "true"로 설정 시 LLM 활성화
+    - SUPERVISOR_LLM_MODEL: 사용할 모델 (기본: gpt-4o-mini)
+
+    Returns:
+        LLM 클라이언트 또는 None (비활성화 시)
+    """
+    enabled = os.getenv("SUPERVISOR_LLM_ENABLED", "false").lower() == "true"
+
+    if not enabled:
+        logger.info("[SupervisorLLM] LLM 비활성화 (SUPERVISOR_LLM_ENABLED != true)")
+        return None
+
+    model = os.getenv("SUPERVISOR_LLM_MODEL", "gpt-4o-mini")
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        logger.warning("[SupervisorLLM] OPENAI_API_KEY 미설정. 규칙 기반 모드로 전환.")
+        return None
+
+    try:
+        from langchain_openai import ChatOpenAI
+
+        class AsyncLLMWrapper:
+            """LangChain ChatOpenAI를 Supervisor LLM 프로토콜로 래핑"""
+
+            def __init__(self, chat_model):
+                self.chat_model = chat_model
+
+            async def generate(self, prompt: str) -> str:
+                response = await self.chat_model.ainvoke(prompt)
+                return response.content
+
+        llm = ChatOpenAI(
+            model=model,
+            temperature=0,
+            max_tokens=300,
+            api_key=api_key,
+        )
+
+        logger.info(f"[SupervisorLLM] LLM 활성화: model={model}")
+        return AsyncLLMWrapper(llm)
+
+    except ImportError:
+        logger.warning("[SupervisorLLM] langchain_openai 미설치. 규칙 기반 모드로 전환.")
+        return None
+    except Exception as e:
+        logger.error(f"[SupervisorLLM] LLM 초기화 실패: {e}. 규칙 기반 모드로 전환.")
+        return None
+
+
+# ============================================================================
 # Retrieval Agent 노드 팩토리
 # ============================================================================
 
@@ -200,8 +259,9 @@ def create_mas_supervisor_graph() -> StateGraph:
     graph.add_node('input_guardrail', _create_timed_node(input_guardrail_node, 'input_guardrail'))
     graph.add_node('output_guardrail', _create_timed_node(output_guardrail_node, 'output_guardrail'))
 
-    # 2. Supervisor (LLM 없이 규칙 기반으로 시작)
-    supervisor = SupervisorNode(llm=None)
+    # 2. Supervisor (환경 변수 기반 LLM 활성화)
+    supervisor_llm = _create_supervisor_llm()
+    supervisor = SupervisorNode(llm=supervisor_llm)
     graph.add_node('supervisor', supervisor.as_node())
 
     # 3. 기능 에이전트
