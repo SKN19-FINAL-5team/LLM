@@ -16,7 +16,6 @@
 
 from typing import Dict, List, Optional
 
-from ..answer_generation.template_loader import extract_followup_questions
 from .templates import (
     QuestionTemplate,
     get_templates_by_dispute_type,
@@ -95,6 +94,9 @@ class FollowupQuestionGenerator:
 
         # 2. 프롬프트 파일에서 동적 추출 시도 (inquiry, reject 제외)
         if template_key:
+            # Lazy import to avoid circular dependency
+            from ..answer_generation.template_loader import extract_followup_questions
+
             prompt_questions = extract_followup_questions(template_key)
             if prompt_questions:
                 return {
