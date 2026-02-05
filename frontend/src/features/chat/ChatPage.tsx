@@ -450,7 +450,7 @@ export default function ChatPage({ currentSessionId = null, onSessionCreate }: C
   };
 
   // 분쟁 상담 메시지 전송 공통 함수
-  const sendDisputeMessage = async (messageContent: string) => {
+  const sendDisputeMessage = useCallback(async (messageContent: string) => {
     if (!messageContent.trim() || disputeStreamingState.isStreaming) return;
 
     // 세션 ID를 스트림 시작 전에 확정
@@ -535,7 +535,17 @@ export default function ChatPage({ currentSessionId = null, onSessionCreate }: C
         )
       );
     }
-  };
+  }, [
+    disputeStreamingState.isStreaming,
+    sessionId,
+    setSessionId,
+    setStoreSessionId,
+    setStoreChatType,
+    onSessionCreate,
+    setDisputeMessages,
+    startDisputeStream,
+    setBackendSessionId,
+  ]);
 
   // 분쟁 상담 메시지 전송 핸들러 (PR-7: SSE Streaming)
   const handleDisputeSend = async () => {
