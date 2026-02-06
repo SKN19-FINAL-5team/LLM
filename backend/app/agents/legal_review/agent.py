@@ -684,6 +684,13 @@ async def review_node_v2(state: Dict, config: Optional[Dict] = None) -> Dict:
             }
         )
 
+    # 5.5. confidence_score 계산
+    # 공식: citation_accuracy * 0.5 + (1 - violation_ratio) * 0.5
+    citation_accuracy = citation_verify.accuracy if citation_verify else 1.0
+    total_checks = len(violation_details) + 1  # +1 to avoid division by zero
+    violation_ratio = len(violation_details) / total_checks
+    confidence_score = round(citation_accuracy * 0.5 + (1 - violation_ratio) * 0.5, 4)
+
     # 6. 심각한 위반 개수 계산
     critical_count = sum(1 for v in violation_details if v["severity"] == "critical")
 
@@ -712,6 +719,7 @@ async def review_node_v2(state: Dict, config: Optional[Dict] = None) -> Dict:
                 "final_answer": None,
                 "review_time_ms": review_time_ms,
                 "strict_mode": strict_mode,
+                "confidence_score": confidence_score,
             },
             "retry_context": retry_context,
             "retry_count": retry_count + 1,
@@ -743,7 +751,9 @@ async def review_node_v2(state: Dict, config: Optional[Dict] = None) -> Dict:
             "final_answer": filtered_answer,
             "review_time_ms": review_time_ms,
             "strict_mode": strict_mode,
+            "confidence_score": confidence_score,
         },
+        "confidence_score": confidence_score,
         "final_answer": filtered_answer,
     }
 

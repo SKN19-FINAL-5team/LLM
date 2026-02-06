@@ -161,6 +161,10 @@ class ChatResponse(BaseModel):
     similar_cases: Optional[SimilarCases] = None
     related_laws: Optional[List[LawReference]] = None
     related_criteria: Optional[List[CriteriaReference]] = None
+    # Human-in-the-Loop 상태
+    status: Optional[str] = Field(
+        default=None, description="응답 상태 (review_pending 등)"
+    )
     # debug 모드 필드
     node_timings: Optional[List[NodeTiming]] = None
     request_id: Optional[str] = None

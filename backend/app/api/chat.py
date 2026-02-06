@@ -61,6 +61,7 @@ KNOWN_GRAPH_NODES = {
     "retrieval_criteria",
     "retrieval_case",
     "retrieval_merge",
+    "human_review",
 }
 
 
@@ -213,6 +214,35 @@ async def chat(
             logger.info(
                 f"[chat] Graph execution completed for session={session_id[:8]}"
             )
+
+            # === Human-in-the-Loop: interrupt 상태 감지 ===
+            if final_state.get("__interrupt__") or (
+                isinstance(final_state, dict)
+                and not final_state.get("final_answer")
+                and final_state.get("review", {}).get("confidence_score", 1.0) < 0.7
+            ):
+                # interrupt 발생 → 관리자 검토 대기
+                from app.api.admin_review import add_pending_review
+
+                review_data = final_state.get("review", {})
+                add_pending_review(
+                    session_id,
+                    {
+                        "query": body.message,
+                        "final_answer": review_data.get("final_answer", ""),
+                        "confidence_score": review_data.get("confidence_score", 0.0),
+                        "violations": review_data.get("violations", []),
+                    },
+                )
+                logger.info(f"[chat] Review pending for session={session_id[:8]}")
+
+                return ChatResponse(
+                    answer="답변이 관리자 검토 대기 중입니다. 검토 완료 후 답변이 제공됩니다.",
+                    session_id=session_id,
+                    chat_type=body.chat_type,
+                    status="review_pending",
+                )
+            # === Human-in-the-Loop 끝 ===
 
             # === PR-6: L1 Cache Save ===
             if final_state.get("final_answer") and not final_state.get(

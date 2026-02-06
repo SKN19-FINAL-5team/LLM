@@ -414,6 +414,13 @@ def create_mas_supervisor_graph() -> StateGraph:
     graph.add_node("generation", _create_timed_node(gen_node, "generation"))
     graph.add_node("review", _create_timed_node(rev_node, "review"))
 
+    # Human-in-the-Loop: 관리자 검토 노드
+    from .nodes.human_review import human_review_node
+
+    graph.add_node(
+        "human_review", _create_timed_node(human_review_node, "human_review")
+    )
+
     # v2: 3개 Retrieval Agent (counsel 제외)
     for agent_type in ["law", "criteria", "case"]:
         node_fn = _create_retrieval_agent_node(agent_type)
@@ -472,7 +479,15 @@ def create_mas_supervisor_graph() -> StateGraph:
     graph.add_edge("retrieval_merge", "supervisor")
     graph.add_edge("query_analysis", "supervisor")
     graph.add_edge("generation", "supervisor")
-    graph.add_edge("review", "supervisor")
+    # Human-in-the-Loop: review → 조건부 → human_review 또는 supervisor
+    from .nodes.human_review import should_route_to_human_review
+
+    graph.add_conditional_edges(
+        "review",
+        should_route_to_human_review,
+        {"human_review": "human_review", "supervisor": "supervisor"},
+    )
+    graph.add_edge("human_review", "supervisor")
     graph.add_edge("output_guardrail", "memory_save")
     graph.add_edge("memory_save", END)
 

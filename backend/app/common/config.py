@@ -596,6 +596,29 @@ class MemoryConfig(BaseSettings):
 # ============================================================
 
 
+class HumanReviewConfig(BaseSettings):
+    """
+    Human-in-the-Loop 관리자 검토 설정.
+
+    환경변수:
+        ENABLE_HUMAN_REVIEW: 관리자 검토 활성화 (기본값: false)
+        REVIEW_CONFIDENCE_THRESHOLD: 검토 임계값 (기본값: 0.7)
+    """
+
+    model_config = SettingsConfigDict(env_prefix="")
+
+    enable_human_review: bool = Field(
+        default=False,
+        alias="ENABLE_HUMAN_REVIEW",
+        description="Human-in-the-Loop 관리자 검토 활성화",
+    )
+    review_confidence_threshold: float = Field(
+        default=0.7,
+        alias="REVIEW_CONFIDENCE_THRESHOLD",
+        description="관리자 검토 트리거 confidence 임계값 (0.0-1.0)",
+    )
+
+
 class ChatbotFeaturesConfig(BaseSettings):
     """
     대화형 챗봇 기능 플래그 설정.
@@ -720,6 +743,7 @@ class AppConfig(BaseSettings):
     )
     retrieval: RetrievalSettings = Field(default_factory=RetrievalSettings)
     response: ResponseConfig = Field(default_factory=ResponseConfig)
+    human_review: HumanReviewConfig = Field(default_factory=HumanReviewConfig)
 
     def get_cors_origins_list(self) -> List[str]:
         """
