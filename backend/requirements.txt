@@ -122,3 +122,4 @@ python-dateutil==2.9.0.post0
 # ============================================================================
 # - uvloop is Linux/macOS only (not needed on Windows)
 # - Local embedding (KURE-v1) removed - using OpenAI embeddings only
+cohere>=5.0.0

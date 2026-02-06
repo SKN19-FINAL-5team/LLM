@@ -416,6 +416,17 @@ class RetrievalSettings(BaseSettings):
         default=0.01, description="RRF 최소 품질 점수. 이하면 marginal 경고"
     )
 
+    # 리랭킹 설정
+    reranking_enabled: bool = Field(default=False, description="리랭킹 활성화 여부")
+    reranker_type: str = Field(
+        default="cohere",
+        description="리랭커 타입 (cohere | bge)",
+    )
+    reranker_top_k: int = Field(default=5, description="리랭킹 후 반환할 상위 문서 수")
+    reranker_timeout_ms: int = Field(
+        default=500, description="리랭킹 타임아웃 (밀리초)"
+    )
+
 
 # ============================================================
 # Redis 설정

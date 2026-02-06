@@ -279,6 +279,85 @@ def _update_supervisor_state(
     }
 
 
+def _apply_reranking(
+    merged: RetrievalResult,
+    query: str,
+) -> RetrievalResult:
+    """
+    리랭킹 적용 (제품 필터링 후, display_limits 전).
+
+    ENABLE_RERANKING 환경변수가 false이면 바이패스.
+    리랭킹 실패 시 원본 순서 유지 (graceful fallback).
+    """
+    import asyncio
+    import os
+
+    if os.getenv("RETRIEVAL_RERANKING_ENABLED", "false").lower() != "true":
+        return merged
+
+    if not query:
+        return merged
+
+    from app.common.config import get_config
+
+    config = get_config().retrieval
+    reranker_type = config.reranker_type
+    top_k = config.reranker_top_k
+    timeout_ms = config.reranker_timeout_ms
+
+    try:
+        if reranker_type == "cohere":
+            from app.agents.retrieval.reranker.cohere_reranker import CohereReranker
+
+            reranker = CohereReranker(timeout_ms=timeout_ms)
+        elif reranker_type == "bge":
+            from app.agents.retrieval.reranker.bge_reranker import BGEReranker
+
+            reranker = BGEReranker()
+        else:
+            logger.warning(f"[RetrievalMerge] Unknown reranker type: {reranker_type}")
+            return merged
+
+        section_keys = ["laws", "criteria", "disputes", "counsels"]
+        reranked_merged = dict(merged)
+
+        for section_key in section_keys:
+            docs = merged.get(section_key, [])
+            if not docs or len(docs) <= 1:
+                continue
+
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    import concurrent.futures
+
+                    with concurrent.futures.ThreadPoolExecutor() as pool:
+                        ranked = pool.submit(
+                            asyncio.run,
+                            reranker.rerank(query, docs, top_k=top_k),
+                        ).result()
+                else:
+                    ranked = asyncio.run(reranker.rerank(query, docs, top_k=top_k))
+
+                if ranked:
+                    reranked_merged[section_key] = [r.document for r in ranked]
+                    logger.info(
+                        f"[RetrievalMerge] Reranked {section_key}: "
+                        f"{len(docs)} → {len(ranked)} docs"
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"[RetrievalMerge] Rerank failed for {section_key}: {e}, "
+                    f"keeping original order"
+                )
+
+        return reranked_merged
+
+    except Exception as e:
+        logger.warning(f"[RetrievalMerge] Reranking setup error: {e}")
+        return merged
+
+
 def _apply_display_limits(
     merged: RetrievalResult,
     session_id: Optional[str],
@@ -484,6 +563,9 @@ async def retrieval_merge_node(state: ChatState) -> Dict[str, Any]:
                                 f"low-relevance {section_key} (kept {len(high_relevance)})"
                             )
                     # else: keep all results to maintain minimum coverage
+
+    # 리랭킹 적용 (제품 필터링 후, display_limits 전)
+    merged = _apply_reranking(merged, state.get("query", ""))
 
     # 도메인별 노출 수 제한 적용
     session_id = state.get("session_id")
