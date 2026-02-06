@@ -7,9 +7,10 @@ Human-in-the-Loop 관리자 검토 엔드포인트.
 
 import datetime
 import logging
+import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
@@ -17,6 +18,15 @@ from app.supervisor import get_graph_for_chat_type
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/reviews", tags=["Admin Review"])
+
+
+# Admin API Key Authentication
+async def verify_admin_key(x_admin_key: str = Header(..., alias="X-Admin-Key")) -> str:
+    """Verify admin API key."""
+    expected = os.getenv("ADMIN_API_KEY", "")
+    if not expected or x_admin_key != expected:
+        raise HTTPException(status_code=403, detail="Invalid admin API key")
+    return x_admin_key
 
 
 # Request/Response Models
@@ -73,13 +83,19 @@ def get_pending_reviews() -> List[Dict[str, Any]]:
     return list(_pending_reviews.values())
 
 
-@router.get("", response_model=List[PendingReview])
+@router.get(
+    "", response_model=List[PendingReview], dependencies=[Depends(verify_admin_key)]
+)
 async def list_pending_reviews():
     """대기 중인 관리자 검토 목록 조회."""
     return get_pending_reviews()
 
 
-@router.get("/{thread_id}", response_model=PendingReview)
+@router.get(
+    "/{thread_id}",
+    response_model=PendingReview,
+    dependencies=[Depends(verify_admin_key)],
+)
 async def get_review(thread_id: str):
     """특정 검토 상세 조회."""
     if thread_id not in _pending_reviews:
@@ -87,7 +103,11 @@ async def get_review(thread_id: str):
     return _pending_reviews[thread_id]
 
 
-@router.post("/{thread_id}/decide", response_model=ReviewResponse)
+@router.post(
+    "/{thread_id}/decide",
+    response_model=ReviewResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
 async def decide_review(thread_id: str, decision: ReviewDecision):
     """
     관리자 검토 결정 처리.
@@ -130,14 +150,22 @@ async def decide_review(thread_id: str, decision: ReviewDecision):
         )
 
 
-@router.post("/{thread_id}/approve", response_model=ReviewResponse)
+@router.post(
+    "/{thread_id}/approve",
+    response_model=ReviewResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
 async def approve_review(thread_id: str, reason: Optional[str] = None):
     """검토 승인 (간편 엔드포인트)."""
     decision = ReviewDecision(action="approve", reason=reason)
     return await decide_review(thread_id, decision)
 
 
-@router.post("/{thread_id}/reject", response_model=ReviewResponse)
+@router.post(
+    "/{thread_id}/reject",
+    response_model=ReviewResponse,
+    dependencies=[Depends(verify_admin_key)],
+)
 async def reject_review(
     thread_id: str,
     fallback_answer: Optional[str] = None,

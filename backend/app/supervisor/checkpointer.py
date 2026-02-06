@@ -101,11 +101,21 @@ def _create_postgres_checkpointer() -> BaseCheckpointSaver:
         db = config.database
         dsn = f"postgresql://{db.user}:{db.password}@{db.host}:{db.port}/{db.name}"
 
-        # Sync PostgresSaver (LangGraph graph.compile uses sync checkpointer)
-        import psycopg
+        # Connection pool for production use
+        try:
+            from psycopg_pool import ConnectionPool
 
-        conn = psycopg.connect(dsn, autocommit=True)
-        checkpointer = PostgresSaver(conn)
+            pool = ConnectionPool(conninfo=dsn, min_size=2, max_size=10, open=True)
+            checkpointer = PostgresSaver(pool)
+        except ImportError:
+            logger.warning(
+                "[Checkpointer] psycopg_pool not available, using single connection"
+            )
+            import psycopg
+
+            conn = psycopg.connect(dsn, autocommit=True)
+            checkpointer = PostgresSaver(conn)
+
         checkpointer.setup()
 
         logger.info("[Checkpointer] PostgresSaver initialized successfully")
