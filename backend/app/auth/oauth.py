@@ -44,6 +44,12 @@ from app.common.config import AuthConfig
 logger = logging.getLogger(__name__)
 
 
+class OAuthConfigError(Exception):
+    """OAuth 크리덴셜이 설정되지 않았을 때 발생하는 예외"""
+
+    pass
+
+
 class OAuthProvider(ABC):
     """
     OAuth 2.0 제공자 추상 클래스.
@@ -146,7 +152,16 @@ class GoogleOAuth(OAuthProvider):
 
         Returns:
             (authorization_url, state)
+
+        Raises:
+            OAuthConfigError: Google OAuth 크리덴셜이 미설정
         """
+        if not self.auth_config.is_google_oauth_configured:
+            raise OAuthConfigError(
+                "Google OAuth 크리덴셜(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)이 "
+                "설정되지 않았습니다. 환경변수 또는 AWS Secrets Manager를 확인하세요."
+            )
+
         if state is None:
             state = secrets.token_urlsafe(32)
 
@@ -179,8 +194,15 @@ class GoogleOAuth(OAuthProvider):
             Token 정보 딕셔너리
 
         Raises:
+            OAuthConfigError: Google OAuth 크리덴셜이 미설정
             httpx.HTTPError: API 호출 실패
         """
+        if not self.auth_config.is_google_oauth_configured:
+            raise OAuthConfigError(
+                "Google OAuth 크리덴셜(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)이 "
+                "설정되지 않았습니다. 환경변수 또는 AWS Secrets Manager를 확인하세요."
+            )
+
         redirect_uri = f"{self.auth_config.backend_url}/auth/google/callback"
 
         data = {
@@ -256,7 +278,16 @@ class NaverOAuth(OAuthProvider):
 
         Returns:
             (authorization_url, state)
+
+        Raises:
+            OAuthConfigError: Naver OAuth 크리덴셜이 미설정
         """
+        if not self.auth_config.is_naver_oauth_configured:
+            raise OAuthConfigError(
+                "Naver OAuth 크리덴셜(NAVER_CLIENT_ID, NAVER_CLIENT_SECRET)이 "
+                "설정되지 않았습니다. 환경변수 또는 AWS Secrets Manager를 확인하세요."
+            )
+
         if state is None:
             state = secrets.token_urlsafe(32)
 
@@ -286,8 +317,15 @@ class NaverOAuth(OAuthProvider):
             Token 정보 딕셔너리
 
         Raises:
+            OAuthConfigError: Naver OAuth 크리덴셜이 미설정
             httpx.HTTPError: API 호출 실패
         """
+        if not self.auth_config.is_naver_oauth_configured:
+            raise OAuthConfigError(
+                "Naver OAuth 크리덴셜(NAVER_CLIENT_ID, NAVER_CLIENT_SECRET)이 "
+                "설정되지 않았습니다. 환경변수 또는 AWS Secrets Manager를 확인하세요."
+            )
+
         # Note: Naver doesn't require redirect_uri in token exchange
         # but log for consistency
         redirect_uri = f"{self.auth_config.backend_url}/auth/naver/callback"

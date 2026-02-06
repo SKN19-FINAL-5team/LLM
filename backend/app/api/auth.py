@@ -38,6 +38,7 @@ from fastapi.responses import RedirectResponse
 
 from app.auth.dependencies import decode_access_token, get_current_user
 from app.auth.models import User
+from app.auth.oauth import OAuthConfigError
 from app.auth.service import AuthService
 from app.auth.user_db import UserDB
 from app.common.config import get_config
@@ -172,8 +173,15 @@ async def google_login(request: Request):
     Returns:
         RedirectResponse: Google 인증 URL로 리다이렉트
     """
-    auth_service = AuthService()
-    auth_url, state = auth_service.get_google_auth_url()
+    try:
+        auth_service = AuthService()
+        auth_url, state = auth_service.get_google_auth_url()
+    except OAuthConfigError as e:
+        logger.error(f"[Auth] Google OAuth 미설정: {e}")
+        error_url = (
+            f"{get_config().auth.frontend_url}/auth/callback#error=oauth_not_configured"
+        )
+        return RedirectResponse(error_url)
 
     # State 저장 (CSRF 방지)
     _store_state(state)
@@ -230,6 +238,13 @@ async def google_callback(
         logger.info(f"[Auth] Google 콜백 성공: user_id={auth_response.user.user_id}")
         return RedirectResponse(redirect_url)
 
+    except OAuthConfigError as e:
+        logger.error(f"[Auth] Google OAuth 미설정 (콜백): {e}")
+        error_url = (
+            f"{get_config().auth.frontend_url}/auth/callback#error=oauth_not_configured"
+        )
+        return RedirectResponse(error_url)
+
     except Exception as e:
         logger.error(f"[Auth] Google 콜백 실패: {e}", exc_info=True)
         # [SEC-03] 보안: 원시 예외 대신 일반 에러 메시지 사용
@@ -253,8 +268,15 @@ async def naver_login(request: Request):
     Returns:
         RedirectResponse: Naver 인증 URL로 리다이렉트
     """
-    auth_service = AuthService()
-    auth_url, state = auth_service.get_naver_auth_url()
+    try:
+        auth_service = AuthService()
+        auth_url, state = auth_service.get_naver_auth_url()
+    except OAuthConfigError as e:
+        logger.error(f"[Auth] Naver OAuth 미설정: {e}")
+        error_url = (
+            f"{get_config().auth.frontend_url}/auth/callback#error=oauth_not_configured"
+        )
+        return RedirectResponse(error_url)
 
     # State 저장 (CSRF 방지)
     _store_state(state)
@@ -310,6 +332,13 @@ async def naver_callback(
 
         logger.info(f"[Auth] Naver 콜백 성공: user_id={auth_response.user.user_id}")
         return RedirectResponse(redirect_url)
+
+    except OAuthConfigError as e:
+        logger.error(f"[Auth] Naver OAuth 미설정 (콜백): {e}")
+        error_url = (
+            f"{get_config().auth.frontend_url}/auth/callback#error=oauth_not_configured"
+        )
+        return RedirectResponse(error_url)
 
     except Exception as e:
         logger.error(f"[Auth] Naver 콜백 실패: {e}", exc_info=True)

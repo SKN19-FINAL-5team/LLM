@@ -546,6 +546,16 @@ class AuthConfig(BaseSettings):
         description="Frontend URL",
     )
 
+    @property
+    def is_google_oauth_configured(self) -> bool:
+        """Google OAuth 크리덴셜이 모두 설정되어 있는지 확인"""
+        return bool(self.google_client_id) and bool(self.google_client_secret)
+
+    @property
+    def is_naver_oauth_configured(self) -> bool:
+        """Naver OAuth 크리덴셜이 모두 설정되어 있는지 확인"""
+        return bool(self.naver_client_id) and bool(self.naver_client_secret)
+
 
 # ============================================================
 # 대화 메모리 설정

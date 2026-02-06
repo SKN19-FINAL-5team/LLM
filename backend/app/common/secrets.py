@@ -33,6 +33,8 @@ SECRET_CATEGORIES = [
     "infra",
 ]
 
+CRITICAL_CATEGORIES = {"oauth/google", "oauth/naver", "security"}
+
 _injected = False
 
 
@@ -86,9 +88,22 @@ def inject_aws_secrets() -> int:
             # ResourceNotFoundException 포함 모든 예외 처리
             error_type = type(e).__name__
             if "ResourceNotFoundException" in error_type:
-                logger.warning("Secret not found: %s", secret_name)
+                if category in CRITICAL_CATEGORIES:
+                    logger.error("CRITICAL: Secret not found: %s", secret_name)
+                else:
+                    logger.warning("Secret not found: %s", secret_name)
             else:
                 logger.error("Failed to load secret %s: %s", secret_name, e)
+
+    oauth_keys = [
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "NAVER_CLIENT_ID",
+        "NAVER_CLIENT_SECRET",
+    ]
+    missing = [k for k in oauth_keys if not os.environ.get(k)]
+    if missing:
+        logger.error("OAuth 환경변수 누락: %s - 소셜 로그인 불가", ", ".join(missing))
 
     logger.info(
         "Injected %d secrets from AWS Secrets Manager (%s)", injected, environment

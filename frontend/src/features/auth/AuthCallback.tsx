@@ -80,7 +80,9 @@ export default function AuthCallback() {
         setErrorMessage(
           params.error === 'auth_failed'
             ? '인증에 실패했습니다. 다시 시도해주세요.'
-            : `인증 오류: ${params.error}`
+            : params.error === 'oauth_not_configured'
+              ? '현재 소셜 로그인 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
+              : '인증 오류가 발생했습니다. 다시 시도해주세요.'
         );
         return;
       }
