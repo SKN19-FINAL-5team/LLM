@@ -134,6 +134,9 @@ class TestNoRetrievalFastPath:
             ("환불 받고 싶어요", "NEED_RAG"),
             ("소비자기본법", "NEED_RAG"),
             ("헬스장 계약 취소", "NEED_RAG"),
+            ("전자상거래법 위반", "NEED_RAG"),
+            ("관련 법령 알려줘", "NEED_RAG"),
+            ("오늘 날씨 어때?", "NO_RETRIEVAL"),
         ],
     )
     def test_mode_classification(self, graph, query: str, expected_mode: str):
