@@ -156,11 +156,11 @@ class TestJWTAttackScenarios:
     @pytest.mark.unit
     def test_none_algorithm_rejected(self):
         """알고리즘 혼동 공격 (none) 거부"""
-        # PyJWT는 기본적으로 none 알고리즘을 거부하지만, 확인 필요
-        with pytest.raises((HTTPException, Exception)):
+        with pytest.raises(HTTPException) as exc_info:
             decode_access_token(
                 "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJnb29nbGU6MTIzIn0."
             )
+        assert exc_info.value.status_code == 401
 
     @pytest.mark.unit
     def test_tampered_payload_rejected(self):
